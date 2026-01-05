@@ -20,6 +20,7 @@ export const PinContainer = ({
   const [transform, setTransform] = useState(
     "translate(-50%,-50%) rotateX(0deg)"
   );
+  const resolvedHref = href || "/";
 
   const onMouseEnter = () => {
     setTransform("translate(-50%,-50%) rotateX(40deg) scale(0.8)");
@@ -27,16 +28,29 @@ export const PinContainer = ({
   const onMouseLeave = () => {
     setTransform("translate(-50%,-50%) rotateX(0deg) scale(1)");
   };
+  const onNavigate = () => {
+    if (!resolvedHref) return;
+    window.location.assign(resolvedHref);
+  };
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onNavigate();
+    }
+  };
 
   return (
-    <a
+    <div
       className={cn(
         "relative group/pin z-50  cursor-pointer",
         containerClassName
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      href={href || "/"}
+      onClick={onNavigate}
+      onKeyDown={onKeyDown}
+      role="link"
+      tabIndex={0}
     >
       <div
         style={{
@@ -54,8 +68,8 @@ export const PinContainer = ({
           <div className={cn(" relative z-50 ", className)}>{children}</div>
         </div>
       </div>
-      <PinPerspective title={title} href={href} />
-    </a>
+      <PinPerspective title={title} href={resolvedHref} />
+    </div>
   );
 };
 
@@ -73,6 +87,7 @@ export const PinPerspective = ({
           <a
             href={href}
             target={"_blank"}
+            rel="noreferrer"
             className="relative flex space-x-2 items-center z-10 rounded-full bg-zinc-950 py-0.5 px-4 ring-1 ring-white/10 "
           >
             <span className="relative z-20 text-white text-xs font-bold inline-block py-0.5">

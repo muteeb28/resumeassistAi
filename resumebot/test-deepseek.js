@@ -7,7 +7,7 @@ dotenv.config();
 
 const openai = new OpenAI({
   baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.VITE_DEEPSEEK_API_KEY || 'sk-242c8f9f553641c58e7bcfc8b5f1338b'
+  apiKey: process.env.VITE_DEEPSEEK_API_KEY || ''
 });
 
 async function testDeepSeekAPI() {

@@ -1,0 +1,139 @@
+.resume-optimizer,
+.resume-content {
+  --resume-page-width: 8.5in;
+  --resume-page-height: 11in;
+  --resume-page-padding: 0.5in;
+  --resume-page-background: #ffffff;
+}
+
+.resume-optimizer .template-preview {
+  aspect-ratio: 8.5 / 11;
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  --resume-page-width: 100%;
+  --resume-page-height: 100%;
+  --resume-page-padding: clamp(8px, 1.6vw, 14px);
+}
+
+.resume-optimizer .resume-page {
+  width: var(--resume-page-width);
+  min-height: var(--resume-page-height);
+  padding: var(--resume-page-padding);
+  background: var(--resume-page-background);
+  margin: 0 auto;
+}
+
+.resume-optimizer .resume-preview-wrapper {
+  overflow-x: auto;
+}
+
+.resume-optimizer .resume-preview-shell {
+  overflow: visible;
+}
+
+.resume-optimizer .resume-preview-page {
+  display: flex;
+  justify-content: center;
+}
+
+.resume-optimizer .pdf-friendly {
+  font-family: "Times New Roman", Times, serif;
+  line-height: 1.4;
+  color: #000000;
+  background-color: #ffffff;
+}
+
+.resume-optimizer .pdf-friendly * {
+  box-sizing: border-box;
+}
+
+.resume-optimizer .pdf-friendly h1,
+.resume-optimizer .pdf-friendly h2,
+.resume-optimizer .pdf-friendly h3,
+.resume-optimizer .pdf-friendly h4 {
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 8px;
+  page-break-after: avoid;
+}
+
+.resume-optimizer .pdf-friendly p,
+.resume-optimizer .pdf-friendly li {
+  color: #000000;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.resume-optimizer .pdf-friendly .bg-gray-100,
+.resume-optimizer .pdf-friendly .bg-gray-50,
+.resume-optimizer .pdf-friendly .bg-teal-100,
+.resume-optimizer .pdf-friendly .bg-blue-100,
+.resume-optimizer .pdf-friendly .bg-purple-100,
+.resume-optimizer .pdf-friendly .bg-indigo-100 {
+  background-color: #f8f9fa !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.resume-optimizer .pdf-friendly .border,
+.resume-optimizer .pdf-friendly .border-b,
+.resume-optimizer .pdf-friendly .border-l,
+.resume-optimizer .pdf-friendly .border-r,
+.resume-optimizer .pdf-friendly .border-t,
+.resume-optimizer .pdf-friendly .border-gray-200,
+.resume-optimizer .pdf-friendly .border-gray-300 {
+  border-color: #000000 !important;
+  border-style: solid;
+}
+
+.resume-optimizer .pdf-friendly .text-gray-900,
+.resume-optimizer .pdf-friendly .text-gray-800,
+.resume-optimizer .pdf-friendly .text-gray-700 {
+  color: #000000 !important;
+}
+
+.resume-optimizer .pdf-friendly .text-gray-600,
+.resume-optimizer .pdf-friendly .text-gray-500 {
+  color: #333333 !important;
+}
+
+.resume-optimizer .pdf-friendly .rounded,
+.resume-optimizer .pdf-friendly .rounded-lg,
+.resume-optimizer .pdf-friendly .rounded-xl,
+.resume-optimizer .pdf-friendly .rounded-full {
+  border-radius: 2px !important;
+}
+
+.resume-optimizer .pdf-friendly .shadow-sm,
+.resume-optimizer .pdf-friendly .shadow,
+.resume-optimizer .pdf-friendly .shadow-lg,
+.resume-optimizer .pdf-friendly .shadow-xl {
+  box-shadow: none !important;
+}
+
+.resume-optimizer .pdf-friendly .no-page-break,
+.resume-optimizer .pdf-friendly .experience-item,
+.resume-optimizer .pdf-friendly .education-item,
+.resume-optimizer .pdf-friendly .project-item {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+@media (max-width: 768px) {
+  .resume-optimizer,
+  .resume-content {
+    --resume-page-width: 100%;
+    --resume-page-height: auto;
+    --resume-page-padding: 16px;
+  }
+}
+
+@media print {
+  .resume-optimizer,
+  .resume-content {
+    --resume-page-width: 8.5in;
+    --resume-page-height: 11in;
+    --resume-page-padding: 0.5in;
+  }
+}

@@ -8,10 +8,9 @@ export const Navbar = ({ className }: { className?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { name: "Templates", href: "#templates" },
+    { name: "Job Tracker", href: "#job-tracker" },
     { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#pricing" },
-    { name: "About", href: "#about" },
+    { name: "Pricing", href: "#pricing" }
   ];
 
   return (
@@ -31,12 +30,14 @@ export const Navbar = ({ className }: { className?: string }) => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex items-center space-x-2"
+            className="flex items-center cursor-pointer"
+            onClick={() => window.location.href = "/"}
           >
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">RB</span>
-            </div>
-            <span className="text-white font-bold text-xl">ResumeBot</span>
+            <img
+              src="/logo.png"
+              alt="ResumeBot"
+              className="h-16 w-auto object-contain py-1"
+            />
           </motion.div>
 
           {/* Desktop Navigation */}
@@ -63,12 +64,9 @@ export const Navbar = ({ className }: { className?: string }) => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="hidden md:flex items-center space-x-4"
           >
-            <a
-              href="#contact"
-              className="text-slate-300 hover:text-white transition-colors duration-200"
-            >
+            <Button variant="ghost" size="sm" onClick={() => window.location.hash = "contact"}>
               Contact Us
-            </a>
+            </Button>
             <Button variant="ghost" size="sm">
               Login
             </Button>
@@ -139,15 +137,15 @@ export const Navbar = ({ className }: { className?: string }) => {
                     Contact Us
                   </a>
                   <div className="px-3 space-y-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="w-full"
                     >
                       Login
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="w-full"
                     >
                       Get Started

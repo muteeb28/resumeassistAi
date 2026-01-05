@@ -1,604 +1,438 @@
-"use client";
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { Button } from "./button";
-import { Navbar } from "./navbar";
-import { DeepSeekOptimizationService } from "../services/deepseekOptimization";
+﻿"use client";
 
-type OptimizeStep = 'upload' | 'target-role' | 'job-description' | 'optimizing' | 'template-selection' | 'payment';
+import React, { useState, useEffect } from 'react';
+import { BackgroundRippleLayout } from "@/components/background-ripple-layout";
+import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/button";
+import TemplatePreview from "@/components/resume-optimizer/TemplatePreview";
+import FinalResumePreview from "@/components/resume-optimizer/FinalResumePreview";
+import { getPageCountHint } from "@/components/resume-optimizer/resumeUtils";
+import * as resumeOptimizerApi from "@/services/resumeOptimizerApi";
+import type { OptimizationResult, TargetRole, ProgressUpdate } from "@/services/resumeOptimizerApi";
+import { getFilePageCount } from "@/services/filePageCountUtils";
+import { cn } from "@/lib/utils";
 
-import { FileUpload } from "./file-upload";
-
-const TargetRoleForm = ({ onSubmit, onBack }: {
-  onSubmit: (targetRole: string) => void;
-  onBack: () => void;
-}) => {
-  const [targetRole, setTargetRole] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (targetRole.trim()) {
-      onSubmit(targetRole.trim());
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto"
-    >
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-4">
-          What's Your Target Role?
-        </h2>
-        <p className="text-slate-400 text-lg">
-          Tell us the specific position you're applying for so we can optimize your resume accordingly
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="target-role" className="block text-sm font-medium text-slate-300 mb-2">
-            Target Job Title
-          </label>
-          <input
-            id="target-role"
-            type="text"
-            value={targetRole}
-            onChange={(e) => setTargetRole(e.target.value)}
-            placeholder="e.g., Senior Software Engineer, Product Manager, Data Scientist"
-            className="w-full px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            required
-          />
-        </div>
-        
-        <div className="flex gap-4 justify-center">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onBack}
-            className="px-8"
-          >
-            Back
-          </Button>
-          <Button 
-            type="submit"
-            className="px-8"
-            disabled={!targetRole.trim()}
-          >
-            Continue
-          </Button>
-        </div>
-      </form>
-
-      <div className="mt-8 p-4 bg-slate-800/30 rounded-lg">
-        <p className="text-sm text-slate-400 text-center">
-          💡 <strong>Tip:</strong> Be specific with your target role. This helps our AI tailor 
-          the optimization to match industry expectations and required skills.
-        </p>
-      </div>
-    </motion.div>
-  );
-};
-
-const JobDescriptionForm = ({ onSubmit, onBack }: { 
-  onSubmit: (jobDescription: string) => void;
-  onBack: () => void;
-}) => {
-  const [jobDescription, setJobDescription] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (jobDescription.trim()) {
-      onSubmit(jobDescription.trim());
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto"
-    >
-      <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-white mb-4">
-          Add Job Description
-        </h2>
-        <p className="text-slate-400 text-lg">
-          Paste the job description so our AI can optimize your resume to match the specific requirements
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="job-description" className="block text-sm font-medium text-slate-300 mb-2">
-            Job Description
-          </label>
-          <textarea
-            id="job-description"
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Paste the complete job description here..."
-            className="w-full h-64 px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-            required
-          />
-        </div>
-        
-        <div className="flex gap-4 justify-center">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onBack}
-            className="px-8"
-          >
-            Back
-          </Button>
-          <Button 
-            type="submit"
-            className="px-8"
-            disabled={!jobDescription.trim()}
-          >
-            Optimize Resume
-          </Button>
-        </div>
-      </form>
-
-      <div className="mt-8 p-4 bg-slate-800/30 rounded-lg">
-        <p className="text-sm text-slate-400 text-center">
-          💡 <strong>Tip:</strong> Including a job description helps our AI analyze keyword matches, 
-          required skills, and experience alignment for better ATS optimization.
-        </p>
-      </div>
-    </motion.div>
-  );
-};
-
-const OptimizingAnimation = () => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="max-w-2xl mx-auto text-center"
-  >
-    <div className="mb-8">
-      <div className="mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mb-6">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-12 h-12 border-4 border-white border-t-transparent rounded-full"
-        />
-      </div>
-      <h2 className="text-3xl font-bold text-white mb-4">Optimizing Your Resume</h2>
-      <p className="text-slate-400 text-lg">DeepSeek AI is analyzing and enhancing your resume...</p>
-    </div>
-
-    <div className="space-y-4 text-left max-w-lg mx-auto">
-      {[
-        "Analyzing your uploaded resume content...",
-        "Comparing against job requirements...", 
-        "Identifying missing keywords and skills...",
-        "Creating 3 optimized resume versions...",
-        "Formatting for ATS compatibility..."
-      ].map((step, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.8 }}
-          className="flex items-center gap-3 text-slate-300"
-        >
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: index * 0.8 + 0.3 }}
-            className="w-4 h-4 bg-green-500 rounded-full flex-shrink-0"
-          />
-          {step}
-        </motion.div>
-      ))}
-    </div>
-  </motion.div>
-);
-
-interface OptimizedResume {
-  fixes: string[];
-  improvements: string[];
-  missingSkills: string[];
-  matchPercentage: number;
-  templates: {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    content: string;
-  }[];
+export interface UploadedFile {
+  name: string;
+  size: string;
+  file: File;
 }
 
-const TemplateSelection = ({ 
-  optimizedResume, 
-  onSelectTemplate 
-}: { 
-  optimizedResume: OptimizedResume; 
-  onSelectTemplate: (templateId: string, price: number) => void; 
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="max-w-full mx-auto px-4"
-  >
-    {/* Header */}
-    <div className="text-center mb-12">
-      <div className="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-6">
-        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-      <h2 className="text-3xl font-bold text-white mb-4">Resume Optimized Successfully!</h2>
-      <p className="text-slate-400 text-lg max-w-2xl mx-auto">
-        DeepSeek AI has analyzed your resume against the job requirements. Here are your results and 3 optimized templates.
-      </p>
-    </div>
+const sanitizeFilename = (name: string) => name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-    {/* Analysis Results */}
-    <div className="grid md:grid-cols-3 gap-6 mb-12">
-      {/* Match Percentage */}
-      <div className="bg-slate-800/50 rounded-xl p-6 text-center">
-        <h3 className="text-xl font-bold text-white mb-4">🎯 Job Match</h3>
-        <div className="text-4xl font-bold text-green-500 mb-2">{optimizedResume.matchPercentage}%</div>
-        <p className="text-slate-400 text-sm">Resume matches job requirements</p>
-      </div>
+export default function OptimizeResumePage() {
+  const [step, setStep] = useState(1);
+  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizationResult, setOptimizationResult] = useState<OptimizationResult | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
+  const [targetRoles, setTargetRoles] = useState<TargetRole[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<any | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfGenerationType, setPdfGenerationType] = useState<string>('');
+  const [progressUpdates, setProgressUpdates] = useState<ProgressUpdate[]>([]);
 
-      {/* Issues Fixed */}
-      <div className="bg-slate-800/50 rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const roles = await resumeOptimizerApi.getTargetRoles();
+        setTargetRoles(roles);
+      } catch (err) {
+        console.error('Failed to fetch roles:', err);
+      }
+    };
+    fetchRoles();
+  }, []);
+
+  const resumePreviewData = selectedTemplate
+    ? { ...selectedTemplate.content, style: selectedTemplate.style, templateName: selectedTemplate.name }
+    : null;
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("File size exceeds 10MB limit.");
+      return;
+    }
+
+    setUploadedFile({
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(2) + " MB",
+      file: file
+    });
+    setUploadError(null);
+    setStep(2);
+
+    setIsExtracting(true);
+    setExtractError(null);
+    setExtractedData(null);
+    try {
+      const extracted = await resumeOptimizerApi.extractResumeData(file);
+      setExtractedData(extracted);
+    } catch (extractErr: any) {
+      console.error('Resume extraction failed:', extractErr);
+      setExtractError(extractErr.message || 'Failed to extract resume data.');
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleOptimize = async () => {
+    if (!uploadedFile?.file || !selectedRole) return;
+
+    setIsOptimizing(true);
+    setStep(3);
+    setProgressUpdates([]);
+    setError(null);
+
+    try {
+      const pageCount = await getFilePageCount(uploadedFile.file);
+
+      const result = await resumeOptimizerApi.optimizeResumeWithProgress(
+        uploadedFile.file,
+        '',
+        selectedRole,
+        (update: ProgressUpdate) => {
+          setProgressUpdates(prev => [...prev, update]);
+        },
+        pageCount,
+        extractedData
+      );
+      setOptimizationResult(result);
+      setStep(4);
+    } catch (err: any) {
+      setError(err.message || "Optimization failed. Please try again.");
+      setStep(2);
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const resetProcess = () => {
+    setStep(1);
+    setUploadedFile(null);
+    setSelectedRole('');
+    setOptimizationResult(null);
+    setSelectedTemplate(null);
+    setProgressUpdates([]);
+    setError(null);
+  };
+
+  const handleAlternativePdf = async () => {
+    if (!selectedTemplate) return;
+    const element = document.getElementById('resume-content');
+    if (!element || pdfGenerating) return;
+
+    try {
+      setPdfGenerating(true);
+      setPdfGenerationType('Generating PDF...');
+
+      const targetPageCount = resumePreviewData ? getPageCountHint(resumePreviewData) : null;
+      const resolvedTargetPageCount = targetPageCount && targetPageCount > 0 ? targetPageCount : undefined;
+
+      let stylesheets = '';
+      const styleElements = Array.from(document.querySelectorAll('style'));
+      styleElements.forEach(style => { stylesheets += style.textContent + '\n'; });
+
+      const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      for (const link of linkElements) {
+        try {
+          const href = (link as HTMLLinkElement).href;
+          if (href) stylesheets += `@import url('${href}');\n`;
+        } catch (e) { }
+      }
+
+      const printOptimizations = `
+        @page { size: Letter; margin: 0; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { margin: 0; padding: 0; }
+        .resume-content { page-break-inside: auto !important; }
+        .resume-page {
+          width: var(--resume-page-width, 8.5in);
+          min-height: var(--resume-page-height, 11in);
+          padding: var(--resume-page-padding, 0.5in);
+          box-sizing: border-box;
+          background: #ffffff;
+        }
+      `;
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+          <head><meta charset="UTF-8"><style>${stylesheets}${printOptimizations}</style></head>
+          <body>${element.outerHTML}</body>
+        </html>
+      `;
+
+      const response = await fetch(resumeOptimizerApi.buildApiUrl('generate-pdf'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          html,
+          options: {
+            format: 'Letter',
+            printBackground: true,
+            preferCSSPageSize: true,
+            margin: '0in',
+            fitToPage: true,
+            targetPageCount: resolvedTargetPageCount
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error('PDF generation failed');
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${sanitizeFilename(selectedTemplate.name)}-${new Date().getTime()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('Failed to generate PDF.');
+    } finally {
+      setPdfGenerating(false);
+      setPdfGenerationType('');
+    }
+  };
+
+  return (
+    <BackgroundRippleLayout tone="dark" contentClassName="resume-optimizer pt-16">
+      <Navbar />
+
+      <div className="bg-black/40 backdrop-blur-md border-b border-white/10 sticky top-16 z-40">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-4">
+              <div className="px-3 py-1 bg-white/10 rounded-full">
+                <span className="text-xs font-bold text-white uppercase tracking-wider">Step {step} of 4</span>
+              </div>
+              <span className="text-sm font-medium text-slate-400">
+                {step === 1 ? 'Upload' : step === 2 ? 'Customize' : step === 3 ? 'Optimizing' : 'Review'}
+              </span>
+            </div>
+            {step > 1 && (
+              <button onClick={resetProcess} className="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors">
+                Start Over
+              </button>
+            )}
           </div>
-          Issues Fixed ({optimizedResume.fixes.length})
-        </h3>
-        <div className="space-y-2">
-          {optimizedResume.fixes.slice(0, 3).map((fix, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + index * 0.1 }}
-              className="flex items-start gap-2"
-            >
-              <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-2 flex-shrink-0" />
-              <p className="text-slate-300 text-xs">{fix}</p>
-            </motion.div>
-          ))}
+          <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-slate-400 via-white to-slate-400 h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+              style={{ width: `${(step / 4) * 100}%` }}
+            ></div>
+          </div>
         </div>
       </div>
 
-      {/* Missing Skills Added */}
-      <div className="bg-slate-800/50 rounded-xl p-6">
-        <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-          <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          Skills Added ({optimizedResume.missingSkills.length})
-        </h3>
-        <div className="space-y-2">
-          {optimizedResume.missingSkills.slice(0, 3).map((skill, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 + index * 0.1 }}
-              className="flex items-start gap-2"
-            >
-              <div className="w-1.5 h-1.5 bg-orange-400 rounded-full mt-2 flex-shrink-0" />
-              <p className="text-slate-300 text-xs">{skill}</p>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
+      <main className="container mx-auto px-4 sm:px-6 py-12 max-w-7xl min-h-[calc(100vh-160px)]">
+        {step === 1 && (
+          <div className="text-center py-20 animate-in fade-in zoom-in-95 duration-700">
+            <h2 className="text-5xl md:text-6xl font-black text-white mb-6 tracking-tight">
+              Optimize Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-200 to-white">Resume</span>
+            </h2>
+            <p className="text-slate-400 text-xl max-w-2xl mx-auto mb-16 leading-relaxed">
+              Our AI analyzes your experience to craft a perfectly tailored, ATS-ready resume in seconds.
+            </p>
 
-    {/* Template Selection */}
-    <div className="mb-12">
-      <h3 className="text-2xl font-bold text-white text-center mb-8">
-        Choose Your Optimized Resume Template
-      </h3>
-      <div className="flex flex-row gap-8 justify-center items-start">
-        {optimizedResume.templates.map((template, index) => (
-          <motion.div
-            key={template.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 + index * 0.2 }}
-            className="bg-white rounded-xl shadow-lg cursor-pointer hover:shadow-xl transition-shadow overflow-hidden"
-            style={{width: "367px", height: "475px"}}
-            onClick={() => onSelectTemplate(template.id, template.price)}
-          >
-            <div className="overflow-hidden" style={{width: "816px", height: "1056px", transform: "scale(0.45)", transformOrigin: "top left"}}>
-              <div className="p-8 h-full" style={{fontSize: "16px"}}>
-                {template.id === 'professional-ats' && (
-                  <div className="text-base text-gray-800 leading-relaxed whitespace-pre-line h-full overflow-hidden">
-                    {template.content || "No content available"}
+            <div className="max-w-2xl mx-auto">
+              <label className="group relative flex flex-col items-center justify-center w-full h-96 border-2 border-dashed border-white/10 rounded-[2.5rem] cursor-pointer bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/50 transition-all duration-500 shadow-2xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-slate-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="relative flex flex-col items-center px-10">
+                  <div className="w-20 h-20 mb-8 rounded-3xl bg-white/5 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 shadow-xl border border-white/5">
+                    <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
                   </div>
-                )}
-              
-                {template.id === 'modern-executive' && (
-                  <div className="text-base text-gray-800 leading-relaxed whitespace-pre-line h-full overflow-hidden">
-                    {template.content || "No content available"}
+                  <h3 className="text-2xl font-bold text-white mb-3">Drop your resume here</h3>
+                  <p className="text-slate-500 font-medium">PDF, DOC, DOCX up to 10MB</p>
+                </div>
+                <input type="file" className="hidden" accept=".pdf,.doc,.docx" onChange={handleFileUpload} />
+              </label>
+
+              {uploadError && (
+                <div className="mt-8 p-5 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                  <p className="text-red-400 font-bold flex items-center justify-center">
+                    {uploadError}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="max-w-3xl mx-auto py-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-bold text-white mb-4">Target Your Dream Role</h2>
+              <p className="text-slate-400 text-lg">We'll tailor every bullet point to match industry expectations.</p>
+            </div>
+
+            <div className="grid gap-8">
+              <div className="bg-white/5 rounded-3xl border border-white/10 p-8 backdrop-blur-sm shadow-2xl">
+                <div className="flex items-center gap-6">
+                  <div className="w-16 h-16 bg-gradient-to-br from-white/10 to-slate-500/10 rounded-2xl flex items-center justify-center border border-white/10">
+                    <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                   </div>
-                )}
-              
-                {template.id === 'creative-impact' && (
-                  <div className="text-base text-gray-800 leading-relaxed whitespace-pre-line h-full overflow-hidden">
-                    {template.content || "No content available"}
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">{uploadedFile?.name}</h3>
+                    <p className="text-slate-400">{uploadedFile?.size}</p>
                   </div>
+                </div>
+              </div>
+              {isExtracting && (
+                <div className="text-sm text-slate-400 text-center">
+                  Extracting resume data for a lighter AI prompt...
+                </div>
+              )}
+              {extractError && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-yellow-300 text-center text-sm">
+                  {extractError} You can still continue.
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-slate-400 uppercase tracking-widest px-2">Choose Role</label>
+                <input
+                  type="text"
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  placeholder="e.g. Senior Software Engineer"
+                  list="target-roles"
+                  autoComplete="off"
+                  className="w-full px-6 py-5 bg-white/5 border border-white/10 rounded-2xl focus:ring-4 focus:ring-white/10 focus:border-white text-white transition-all duration-300 outline-none hover:bg-white/[0.08]"
+                />
+                <datalist id="target-roles">
+                  {targetRoles.map((role) => (
+                    <option key={role.value} value={role.label} />
+                  ))}
+                </datalist>
+              </div>
+
+              {error && (
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-center font-bold">
+                  {error}
+                </div>
+              )}
+
+              <Button onClick={handleOptimize} disabled={!selectedRole || isOptimizing} size="lg" className="h-16 text-lg font-bold">
+                {isOptimizing ? 'Optimizing Experience...' : 'Optimize My Resume'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="max-w-2xl mx-auto py-20 text-center">
+            <div className="relative w-32 h-32 mx-auto mb-12">
+              <div className="absolute inset-0 border-4 border-white/5 rounded-full" />
+              <div className="absolute inset-0 border-4 border-white rounded-full border-t-transparent animate-spin" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg className="w-12 h-12 text-white animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-6">Optimizing Insights</h2>
+            <div className="bg-white/5 backdrop-blur-xl rounded-[2rem] border border-white/10 p-10 text-left shadow-2xl">
+              <div className="space-y-6">
+                {progressUpdates.length > 0 ? progressUpdates.map((update, idx) => (
+                  <div key={idx} className="flex items-center gap-5 animate-in slide-in-from-left-6 duration-500">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center shrink-0",
+                      update.step === 'completed' ? "bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.4)]" : "bg-white/20 animate-pulse border border-white/40"
+                    )}>
+                      {update.step === 'completed' ? (
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                      ) : (
+                        <div className="w-2.5 h-2.5 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <span className="text-lg text-slate-200 font-medium">{update.message}</span>
+                  </div>
+                )) : (
+                  <div className="text-center py-4 text-slate-400 italic">Initializing AI engine...</div>
                 )}
               </div>
             </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-
-    <div className="text-center mt-6">
-      <p className="text-slate-400 mb-6">
-        All templates include your actual resume content optimized by DeepSeek AI. Choose your preferred design.
-      </p>
-    </div>
-  </motion.div>
-);
-
-const PaymentFlow = ({ onBack }: { onBack: () => void }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="max-w-2xl mx-auto text-center"
-  >
-    <h2 className="text-3xl font-bold text-white mb-4">Complete Your Purchase</h2>
-    <p className="text-slate-400 mb-8">
-      Secure payment to get your optimized resume
-    </p>
-    
-    <div className="bg-slate-800/50 rounded-xl p-8 mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <span className="text-white">Resume Optimization Service</span>
-        <span className="text-2xl font-bold text-white">$12.00</span>
-      </div>
-      <div className="text-slate-400 text-sm text-left space-y-2">
-        <div>✓ DeepSeek AI optimization</div>
-        <div>✓ ATS-friendly formatting</div>
-        <div>✓ Keyword enhancement</div>
-        <div>✓ Professional templates</div>
-        <div>✓ Instant download</div>
-      </div>
-    </div>
-
-    <div className="space-y-4">
-      <Button size="lg" className="w-full">
-        Pay with Stripe
-      </Button>
-      <Button variant="outline" size="lg" className="w-full">
-        Pay with PayPal
-      </Button>
-    </div>
-
-    <button
-      onClick={onBack}
-      className="mt-6 text-slate-400 hover:text-white transition-colors"
-    >
-      ← Back to templates
-    </button>
-  </motion.div>
-);
-
-export const OptimizeResumePage = () => {
-  const [currentStep, setCurrentStep] = useState<OptimizeStep>('upload');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [targetRole, setTargetRole] = useState<string>('');
-  const [optimizedResume, setOptimizedResume] = useState<OptimizedResume | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<{id: string, price: number} | null>(null);
-  
-  const optimizationService = new DeepSeekOptimizationService(
-    import.meta.env.VITE_OPENAI_API_KEY || 'demo-key'
-  );
-
-  const handleFileUpload = (files: File[]) => {
-    if (files.length > 0) {
-      setUploadedFile(files[0]);
-      setCurrentStep('target-role');
-    }
-  };
-
-  const handleTargetRoleSubmit = (role: string) => {
-    setTargetRole(role);
-    setCurrentStep('job-description');
-  };
-
-  const handleJobDescriptionSubmit = async (jobDesc: string) => {
-    setCurrentStep('optimizing');
-    
-    if (!uploadedFile) {
-      return;
-    }
-    
-    try {
-      const resumeText = await optimizationService.extractTextFromFile(uploadedFile);
-      const optimizationResult = await optimizationService.optimizeResume(
-        resumeText,
-        targetRole,
-        jobDesc
-      );
-      
-      const optimizedResumeData: OptimizedResume = {
-        fixes: optimizationResult.fixes || [],
-        improvements: optimizationResult.improvements || [],
-        missingSkills: optimizationResult.missingSkills || [],
-        matchPercentage: optimizationResult.matchPercentage || 0,
-        templates: [
-          {
-            id: 'professional-ats',
-            name: 'Professional ATS',
-            description: 'Clean, ATS-friendly design optimized for applicant tracking systems',
-            price: 12,
-            content: optimizationResult.template1 || ''
-          },
-          {
-            id: 'modern-executive',
-            name: 'Modern Executive', 
-            description: 'Contemporary design perfect for senior-level positions',
-            price: 15,
-            content: optimizationResult.template2 || ''
-          },
-          {
-            id: 'creative-impact',
-            name: 'Creative Impact',
-            description: 'Eye-catching design that highlights your achievements',
-            price: 18,
-            content: optimizationResult.template3 || ''
-          }
-        ]
-      };
-      
-      setOptimizedResume(optimizedResumeData);
-      setCurrentStep('template-selection');
-    } catch (error) {
-      alert(`DeepSeek optimization failed: ${error}. Showing demo results.`);
-      
-      const fallbackData: OptimizedResume = {
-        fixes: [
-          "Enhanced action verbs throughout experience section",
-          "Added missing technical keywords for better ATS scoring", 
-          "Improved quantification of achievements with specific metrics",
-          "Optimized formatting for better readability",
-          "Strengthened professional summary alignment with target role"
-        ],
-        improvements: [
-          `Tailored content specifically for ${targetRole} position`,
-          "Highlighted relevant technical skills and competencies",
-          "Enhanced project descriptions with measurable outcomes", 
-          "Added industry-specific terminology and keywords",
-          "Improved overall professional presentation and impact"
-        ],
-        missingSkills: [
-          "React and modern JavaScript frameworks",
-          "Cloud platforms (AWS, Azure, GCP)",
-          "Project management and leadership skills",
-          "Data analysis and visualization tools",
-          "Agile/Scrum methodologies"
-        ],
-        matchPercentage: 78,
-        templates: [
-          {
-            id: 'professional-ats',
-            name: 'Professional ATS',
-            description: 'Clean, ATS-friendly design optimized for applicant tracking systems', 
-            price: 12,
-            content: `OPTIMIZED RESUME - PROFESSIONAL ATS FORMAT\n\n[YOUR NAME FROM UPLOADED RESUME]\n${targetRole}\n[Your actual email and phone from resume]\n\nPROFESSIONAL SUMMARY\nExperienced ${targetRole} with proven track record of delivering high-impact solutions and driving measurable business results. Expert in relevant technologies with strong analytical and problem-solving capabilities.\n\nCORE COMPETENCIES\n• Technical expertise in job-specific technologies\n• Project leadership and cross-functional collaboration\n• Data-driven decision making and performance optimization\n• Agile methodologies and best practices implementation\n• Strategic planning and stakeholder management\n\nPROFESSIONAL EXPERIENCE\n\n[Your actual work experience will be optimized here]\nSenior Professional | Tech Company | 2020-2023\n• Led development of enterprise solutions serving 10,000+ users\n• Improved system performance by 45% through architectural optimizations\n• Mentored cross-functional teams and established technical standards\n• Delivered projects ahead of schedule with 98% stakeholder satisfaction\n\nTECHNICAL SKILLS\n[Enhanced with job-specific keywords and technologies]\n\nEDUCATION\n[Your actual education from uploaded resume]\n\nCERTIFICATIONS\n[Relevant certifications mentioned in your resume]`
-          },
-          {
-            id: 'modern-executive',
-            name: 'Modern Executive', 
-            description: 'Contemporary design perfect for senior-level positions',
-            price: 15,
-            content: `MODERN EXECUTIVE RESUME FORMAT\n\n═══════════════════════════\n[YOUR NAME FROM UPLOADED RESUME]\n${targetRole}\n═══════════════════════════\n\n📧 [Your actual email] | 📱 [Your actual phone]\n\n▶ EXECUTIVE PROFILE\n──────────────────────\nStrategic ${targetRole} with expertise in driving organizational growth and delivering exceptional business outcomes. Proven leader with track record of managing complex projects and building high-performing teams.\n\n▶ KEY ACHIEVEMENTS\n──────────────────────\n🎯 [Quantified achievements from your resume]\n📈 Delivered measurable business impact through strategic initiatives\n👥 Led cross-functional teams to exceed performance targets\n💡 Implemented innovative solutions driving operational excellence\n\n▶ PROFESSIONAL EXPERIENCE\n──────────────────────────\n[Your actual work experience optimized for executive level]\n\n▶ CORE COMPETENCIES\n────────────────────\n• Strategic Leadership & Vision\n• Digital Transformation\n• Performance Optimization\n• Stakeholder Management\n• Team Development & Mentoring\n\n▶ EDUCATION & CREDENTIALS\n─────────────────────────\n[Your actual education and certifications]`
-          },
-          {
-            id: 'creative-impact',
-            name: 'Creative Impact',
-            description: 'Eye-catching design that highlights your achievements',
-            price: 18,
-            content: `🌟 CREATIVE IMPACT RESUME 🌟\n\n╔═══════════════════════════════╗\n║  [YOUR NAME FROM RESUME]      ║\n║  ${targetRole}                ║\n║  ✉️ [email] | 📱 [phone]     ║\n╚═══════════════════════════════╝\n\n🚀 IMPACT STATEMENT\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nInnovative ${targetRole} passionate about creating transformative solutions that drive business success. Expert in leveraging cutting-edge technologies to deliver exceptional user experiences and measurable results.\n\n⭐ HIGHLIGHTED ACHIEVEMENTS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🎯 PERFORMANCE EXCELLENCE\n   ▸ [Your quantified achievements]\n   ▸ Exceeded performance targets by significant margins\n   ▸ Implemented solutions resulting in cost savings\n\n💡 INNOVATION & LEADERSHIP\n   ▸ Led strategic initiatives and transformation projects\n   ▸ Mentored teams and established best practices\n   ▸ Delivered award-winning solutions\n\n📊 TECHNICAL EXPERTISE\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n[Enhanced technical skills from your resume]\n• Advanced proficiency in relevant technologies\n• Cloud platforms and modern development practices\n• Data analysis and performance optimization\n\n🏢 PROFESSIONAL JOURNEY\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n[Your actual work experience with creative formatting]\n\n🎓 EDUCATION & GROWTH\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n[Your actual education and certifications]`
-          }
-        ]
-      };
-      
-      setOptimizedResume(fallbackData);
-      setCurrentStep('template-selection');
-    }
-  };
-
-  const handleBackToUpload = () => {
-    setCurrentStep('upload');
-    setUploadedFile(null);
-    setTargetRole('');
-    setJobDescription('');
-  };
-
-  const handleBackToTargetRole = () => {
-    setCurrentStep('target-role');
-  };
-
-
-  const handleSelectTemplate = (templateId: string, price: number) => {
-    setSelectedTemplate({ id: templateId, price });
-    setCurrentStep('payment');
-  };
-
-  return (
-    <div className="min-h-screen bg-black">
-      <Navbar />
-      <div className="pt-24 pb-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
-              Optimize Your Resume
-            </h1>
-            <p className="text-xl text-slate-400 max-w-3xl mx-auto">
-              Upload your resume, specify your target role, and let DeepSeek AI create optimized versions tailored to your job requirements
-            </p>
           </div>
+        )}
 
-          <AnimatePresence mode="wait">
-            {currentStep === 'upload' && (
-              <motion.div key="upload">
-                <FileUpload onChange={handleFileUpload} />
-              </motion.div>
+        {step === 4 && (
+          <div className="animate-in fade-in duration-700">
+            {!selectedTemplate ? (
+              <>
+                <div className="text-center mb-16">
+                  <div className="inline-flex items-center px-4 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-xs font-black uppercase tracking-widest mb-6">
+                    Optimization Successful
+                  </div>
+                  <h2 className="text-5xl font-black text-white mb-4">Select A Style</h2>
+                  <p className="text-slate-400 text-lg">Choose a template that best represents your professional brand.</p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                  {optimizationResult?.data?.templates?.map((template: any) => (
+                    <div
+                      key={template.id}
+                      className="group bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-8 hover:bg-white/[0.06] hover:border-white/50 transition-all duration-500 cursor-pointer shadow-2xl"
+                      onClick={() => setSelectedTemplate(template)}
+                    >
+                      <div className="flex items-center justify-between mb-8">
+                        <div>
+                          <h3 className="text-2xl font-bold text-white mb-1">{template.name}</h3>
+                          <p className="text-slate-400">{template.description}</p>
+                        </div>
+                        <div className="px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-white uppercase tracking-tighter">Premium</div>
+                      </div>
+                      <div className="relative h-[550px] rounded-3xl overflow-hidden border border-white/5 bg-white mb-10 group-hover:shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-all duration-500">
+                        <TemplatePreview template={template} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-sm">
+                          <Button size="lg" className="h-14 font-black">Choose This Style</Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="max-w-5xl mx-auto">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12 bg-white/5 border border-white/10 p-10 rounded-[2.5rem] backdrop-blur-xl shadow-2xl">
+                  <div>
+                    <h2 className="text-4xl font-black text-white mb-2 tracking-tight">Final Preview</h2>
+                    <p className="text-slate-400 font-medium">Review your optimized content and styled layout.</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Button variant="outline" onClick={() => setSelectedTemplate(null)} className="h-14 px-8 font-bold">Back to Templates</Button>
+                    <Button onClick={handleAlternativePdf} disabled={pdfGenerating} className="h-14 px-8 font-black">
+                      {pdfGenerating ? (pdfGenerationType || 'Generating...') : 'Download PDF'}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)] overflow-hidden border-[12px] border-slate-950">
+                  <div id="resume-content" className="resume-content">
+                    {resumePreviewData && <FinalResumePreview data={resumePreviewData} mode="multi" />}
+                  </div>
+                </div>
+              </div>
             )}
-            
-            {currentStep === 'target-role' && (
-              <motion.div key="target-role">
-                <TargetRoleForm 
-                  onSubmit={handleTargetRoleSubmit}
-                  onBack={handleBackToUpload}
-                />
-              </motion.div>
-            )}
-            
-            {currentStep === 'job-description' && (
-              <motion.div key="job-description">
-                <JobDescriptionForm 
-                  onSubmit={handleJobDescriptionSubmit}
-                  onBack={handleBackToTargetRole}
-                />
-              </motion.div>
-            )}
-            
-            {currentStep === 'optimizing' && (
-              <motion.div key="optimizing">
-                <OptimizingAnimation />
-              </motion.div>
-            )}
-            
-            {currentStep === 'template-selection' && optimizedResume && (
-              <motion.div key="template-selection">
-                <TemplateSelection 
-                  optimizedResume={optimizedResume}
-                  onSelectTemplate={handleSelectTemplate}
-                />
-              </motion.div>
-            )}
-            
-            {currentStep === 'payment' && selectedTemplate && (
-              <motion.div key="payment">
-                <PaymentFlow onBack={() => setCurrentStep('template-selection')} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
+          </div>
+        )}
+      </main>
+    </BackgroundRippleLayout>
   );
-};
+}

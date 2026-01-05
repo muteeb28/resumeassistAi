@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/resume-optimizer.css";
 
 @keyframes blob {
   0% {
@@ -34,4 +35,34 @@
 
 .bg-grid-16 {
   background-size: 16px 16px;
+}
+
+@keyframes cell-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0.4;
+  }
+}
+
+.animate-cell-ripple {
+  animation: cell-ripple var(--duration, 600ms) ease-out var(--delay, 0ms);
+}
+
+.mask-radial-from-20\% {
+  mask-image: radial-gradient(circle at top, rgba(0, 0, 0, 1) 20%, rgba(0, 0, 0, 0) 75%);
+  -webkit-mask-image: radial-gradient(circle at top, rgba(0, 0, 0, 1) 20%, rgba(0, 0, 0, 0) 75%);
+}
+
+.mask-radial-at-top {
+  mask-position: top;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: top;
+  -webkit-mask-repeat: no-repeat;
 }

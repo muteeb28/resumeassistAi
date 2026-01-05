@@ -8,10 +8,11 @@ import { Navbar } from "./navbar";
 import { PaymentSection } from "./payment-section";
 import { AnimatedTestimonials } from "./animated-testimonials";
 import { motion } from "motion/react";
+import { BackgroundRippleLayout } from "./background-ripple-layout";
 
 export function AnimatedPinDemo() {
   return (
-    <div className="min-h-screen w-full bg-black dark:bg-black">
+    <BackgroundRippleLayout tone="dark">
       {/* Navigation */}
       <Navbar />
       {/* Playful Hero Section */}
@@ -32,7 +33,7 @@ export function AnimatedPinDemo() {
             className="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-8"
             delay={1}
           />
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -66,13 +67,121 @@ export function AnimatedPinDemo() {
         </motion.div>
       </PlayfulHero>
 
-      {/* Resume Optimization Demo Section */}
-      <div className="py-20 px-4 bg-gradient-to-b from-black to-slate-900">
-        <ResumeOptimizationDemo />
-      </div>
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4 scroll-mt-24">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              Features That Move the Needle
+            </h2>
+            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+              Focused tools for matching roles, building resumes, and tracking every application.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-slate-900/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold mb-4">
+                01
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Job Description Match</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Paste a role and get a resume tuned to the exact keywords recruiters scan.
+              </p>
+            </div>
+            <div className="bg-slate-900/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold mb-4">
+                02
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Tailored Resume Builder</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Generate role-specific summaries and bullets while keeping your voice intact.
+              </p>
+            </div>
+            <div className="bg-slate-900/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold mb-4">
+                03
+              </div>
+              <h3 className="text-xl font-semibold text-white mb-2">Job Tracker</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Track every application, follow-up, and outcome from a single dashboard.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-16">
+          <ResumeOptimizationDemo />
+        </div>
+      </section>
+
+      {/* Job Tracker Section */}
+      <section id="job-tracker" className="py-20 px-4 scroll-mt-24">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-10 items-center">
+          <div>
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
+              Job Tracker, Your Way
+            </h2>
+            <p className="text-slate-400 text-lg mb-6">
+              Keep your pipeline organized with a cloud tracker or export everything to Google Sheets.
+            </p>
+            <div className="space-y-3 text-slate-300">
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
+                <span>Stage-based pipeline with reminders</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                <span>Save HR contacts and outreach history</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
+                <span>One-click export to Google Sheets</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-slate-900/50 border border-slate-700 rounded-2xl p-8">
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold text-sm">
+                  01
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">Cloud Tracker</h3>
+                  <p className="text-slate-400 text-sm">
+                    Kanban-style boards to see every role at a glance.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold text-sm">
+                  02
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">Google Sheets Export</h3>
+                  <p className="text-slate-400 text-sm">
+                    Send your tracker to Sheets anytime for sharing or backups.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold text-sm">
+                  03
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1">HR Cold Email Templates</h3>
+                  <p className="text-slate-400 text-sm">
+                    Ready-to-send outreach copy with follow-up reminders.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Testimonials Section */}
-      <div className="bg-gradient-to-b from-black to-slate-900 py-20 relative z-20 isolate">
+      <div className="py-20 relative z-20 isolate">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">
             What Our Users Say
@@ -116,7 +225,7 @@ export function AnimatedPinDemo() {
       <div className="h-32"></div>
 
       {/* Payment Section with Lamp Effect */}
-      <div className="relative z-10 isolate">
+      <div id="pricing" className="relative z-10 isolate scroll-mt-24">
         <PaymentSection />
       </div>
 
@@ -130,7 +239,7 @@ export function AnimatedPinDemo() {
             Join thousands of professionals who have successfully landed interviews with ResumeBot
           </p>
         </div>
-        
+
         <div className="flex justify-center">
           <PinContainer
             title="Get Started Free"
@@ -168,7 +277,13 @@ export function AnimatedPinDemo() {
       {/* Footer */}
       <footer className="border-t border-slate-800 py-12 px-4">
         <div className="max-w-7xl mx-auto text-center">
-          <div className="text-2xl font-bold text-white mb-4">ResumeBot</div>
+          <div className="flex items-center justify-center mb-4">
+            <img
+              src="/logo.png"
+              alt="ResumeBot"
+              className="h-40 w-auto object-contain"
+            />
+          </div>
           <p className="text-slate-400 mb-8">
             The future of resume building is here
           </p>
@@ -183,6 +298,6 @@ export function AnimatedPinDemo() {
           </div>
         </div>
       </footer>
-    </div>
+    </BackgroundRippleLayout>
   );
 }

@@ -2,14 +2,15 @@
 import './App.css'
 import { BrowserRouter as Router, Routes, Route, useParams } from 'react-router-dom'
 import { AnimatedPinDemo } from './components/AnimatedPinDemo'
-import { OptimizeResumePage } from './components/optimize-resume-page'
+import OptimizeResumePage from './components/optimize-resume-page'
+import ATSOptimizePage from './components/ats-optimize-page'
 import { CreateResumeSimple } from './components/create-resume-simple'
 import { ResumeBuilder } from './components/resume-builder'
 import { LiveResumeBuilder } from './components/live-resume-builder'
 
 const ResumeBuilderWrapper = () => {
   const { templateId } = useParams<{ templateId: string }>();
-  
+
   const templates = [
     { id: 'deedy', name: 'Deedy Resume', price: 0, isFree: true },
     { id: 'modern', name: 'Modern Professional', price: 0, isFree: true },
@@ -35,7 +36,7 @@ const ResumeBuilderWrapper = () => {
   ];
 
   const selectedTemplate = templates.find(t => t.id === templateId);
-  
+
   if (!selectedTemplate) {
     return <div>Template not found</div>;
   }
@@ -49,6 +50,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AnimatedPinDemo />} />
         <Route path="/optimize" element={<OptimizeResumePage />} />
+        <Route path="/ats-optimize" element={<ATSOptimizePage />} />
         <Route path="/create" element={<CreateResumeSimple />} />
         <Route path="/build/:templateId" element={<ResumeBuilderWrapper />} />
         <Route path="/live-builder/:templateId" element={<LiveResumeBuilder />} />

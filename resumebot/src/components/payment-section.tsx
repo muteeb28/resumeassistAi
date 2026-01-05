@@ -45,7 +45,7 @@ const PricingCard = ({
       <div className="text-center">
         <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
         <div className="mb-4">
-          <span className="text-5xl font-bold text-white">${price}</span>
+          <span className="text-5xl font-bold text-white">{price}</span>
           {period && <span className="text-slate-400 text-lg">/{period}</span>}
         </div>
         <p className="text-slate-400 mb-6">{description}</p>
@@ -99,58 +99,38 @@ export const PaymentSection = () => {
         }}
         className="text-slate-400 text-xl text-center mb-16 max-w-2xl mt-8"
       >
-        Start free and upgrade as you grow. All plans include unlimited resume downloads and exports.
+        Simple pricing for resume optimization and job tracking. Pay once for a resume or go monthly for tracking and outreach.
       </motion.p>
 
-      <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full">
+      <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto w-full">
         <PricingCard
-          title="Free"
-          price="0"
-          description="Perfect for getting started with basic resume building"
+          title="Resume Optimization"
+          price="Rs 50"
+          description="One-time payment for a tailored, ATS-ready resume."
           features={[
-            "3 resume templates",
-            "Basic AI optimization", 
-            "PDF download",
-            "Email support",
-            "ATS-friendly formatting"
+            "Tailored resume builder",
+            "Job description match",
+            "ATS-friendly formatting",
+            "PDF + DOCX downloads",
+            "One-time payment"
           ]}
-          buttonText="Start Free"
+          buttonText="Pay Rs 50"
         />
         
         <PricingCard
-          title="Pro"
-          price="9"
+          title="Job Tracker + HR Emails"
+          price="Rs 99"
           period="month"
-          description="Ideal for job seekers who want premium features"
+          description="Track applications and run cold email outreach."
           features={[
-            "Unlimited resume templates",
-            "Advanced AI optimization",
-            "Multiple file formats (PDF, Word, PNG)",
-            "Job description matching",
-            "Cover letter generator",
-            "Priority email support",
-            "Resume analytics"
+            "Cloud job tracker",
+            "Google Sheets export",
+            "HR cold email templates",
+            "Follow-up reminders",
+            "Application status dashboard"
           ]}
           isPopular={true}
-          buttonText="Start Pro Trial"
-        />
-        
-        <PricingCard
-          title="Enterprise"
-          price="29"
-          period="month"
-          description="Best for teams and career coaches"
-          features={[
-            "Everything in Pro",
-            "Team collaboration",
-            "White-label branding", 
-            "API access",
-            "Custom templates",
-            "Phone & chat support",
-            "Advanced analytics",
-            "Bulk resume generation"
-          ]}
-          buttonText="Contact Sales"
+          buttonText="Start Monthly Plan"
         />
       </div>
       
