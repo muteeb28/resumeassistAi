@@ -7,6 +7,9 @@ import { Button } from "./button";
 import TemplatePreview from "./resume-optimizer/TemplatePreview";
 import FinalResumePreview from "./resume-optimizer/FinalResumePreview";
 import { buildApiUrl, extractResumeData, parseResumeText, polishResumeText } from "../services/resumeOptimizerApi";
+import axiosInstance from "@/lib/axios";
+import { useUserStore } from '../stores/useUserStore'
+import { toast } from "react-hot-toast";
 
 type Step = "input" | "templates" | "preview";
 type InputMode = "upload" | "paste";
@@ -297,6 +300,8 @@ export const CreateResumeSimple = () => {
   const resumeContentRef = useRef<HTMLDivElement | null>(null);
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
+  const { user } = useUserStore();
+
   const resetFlow = () => {
     setStep("input");
     setInputMode("upload");
@@ -512,6 +517,45 @@ export const CreateResumeSimple = () => {
       setPdfGenerationType("");
     }
   };
+
+  	const handlePaymentGateway = async () => {
+		try {
+				let res = await axiosInstance.post("/payment/charge");
+			const { id, totalAmount } = res.data;
+	
+			// Razorpay options
+			const options = {
+				key: import.meta.env.VITE_RAZORPAY_KEY, // Replace with your Razorpay key ID
+				amount: totalAmount * 100, // Amount in paise
+				currency: "INR",
+				name: "resumeassitAi",
+				description: "Resume Creation Service",
+				order_id: id,
+				handler: function (response: any) {
+					window.location.href = `/purchase-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&token=${response.razorpay_signature}`;
+				},
+				prefill: {
+					name: user?.name,
+					email: user?.email,
+				},
+				theme: {
+					color: "#3399cc",
+				},
+			};
+	
+			// Initialize Razorpay
+			const razorpay = new window.Razorpay(options);
+			razorpay.open();
+	
+			razorpay.on("payment.failed", function (response: any) {
+				console.error("Payment failed:", response.error);
+				alert("Payment failed. Please try again.");
+			});
+		} catch (error: any) {
+			toast.error(error.response?.data?.error || "Error initiating payment");
+			console.error("Error initiating Razorpay payment:", error);
+		}
+	};
 
   return (
     <BackgroundRippleLayout tone="dark" contentClassName="resume-optimizer pt-16">
