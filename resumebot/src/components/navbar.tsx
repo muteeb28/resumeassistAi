@@ -3,9 +3,13 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "../lib/utils";
 import { Button } from "./button";
+import AuthModal from "./auth-modal";
+import { useUserStore } from "../stores/useUserStore";
 
 export const Navbar = ({ className }: { className?: string }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const { user, logout } = useUserStore();
 
   const navItems = [
     { name: "Job Tracker", href: "#job-tracker" },
@@ -67,9 +71,29 @@ export const Navbar = ({ className }: { className?: string }) => {
             <Button variant="ghost" size="sm" onClick={() => window.location.hash = "contact"}>
               Contact Us
             </Button>
-            <Button variant="ghost" size="sm">
-              Login
-            </Button>
+            {
+              user ? (
+                <div className="relative group">
+                  <button
+                    className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white text-sm font-medium"
+                    aria-haspopup="true"
+                    aria-expanded={false}
+                  >
+                    {user.email ? user.email.split("@")[0].slice(0, 2).toUpperCase() : "?"}
+                  </button>
+
+                  <div className="absolute right-0 mt-2 w-40 bg-slate-800 border border-slate-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transform translate-y-1 group-hover:translate-y-0 transition-all duration-150 z-50">
+                    <a href="/profile" className="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">Profile</a>
+                    <a href="/orders" className="block px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">Orders</a>
+                    <button onClick={async () => { await logout(); }} className="w-full text-left px-4 py-2 text-sm text-slate-200 hover:bg-slate-700">Logout</button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="ghost" size="sm" onClick={() => setShowAuth(true)}>
+                  Login
+                </Button>
+              )
+            }
             <Button size="sm">
               Get Started
             </Button>
@@ -141,6 +165,7 @@ export const Navbar = ({ className }: { className?: string }) => {
                       variant="ghost"
                       size="sm"
                       className="w-full"
+                      onClick={() => { setShowAuth(true); setIsOpen(false); }}
                     >
                       Login
                     </Button>
@@ -157,6 +182,7 @@ export const Navbar = ({ className }: { className?: string }) => {
           )}
         </AnimatePresence>
       </div>
+      <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
     </motion.nav>
   );
 };

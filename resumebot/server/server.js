@@ -12,6 +12,10 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import fs from 'fs';
+import {connectDB} from "./db/db.js";
+import cookieParser from 'cookie-parser';
+
+connectDB();
 
 // Import our ENHANCED services AFTER dotenv is configured
 import { optimizeResumeWithPagePreservation } from './services/enhancedResumeOptimizer.js';
@@ -24,8 +28,14 @@ import { polishResumeText } from './services/kimiResumePolisher.js';
 // Import NEW ATS Optimizer
 import { optimizeResumeForATS } from './services/atsResumeOptimizer.js';
 
+// controllers
+import { authProfile, createUser, login } from "./controller/user.controller.js";
+
 const app = express();
 const PORT = process.env.PORT || 3007;
+
+// plugins
+app.use(cookieParser());
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = join(__dirname, 'uploads');
@@ -110,6 +120,10 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+app.post("/api/user/create", createUser);
+app.post("/api/user/login", login);
+app.get("/api/user/profile", authProfile);
 
 // Resume extraction endpoint (non-AI, for front-end preview/compact payloads)
 app.post('/api/extract-resume', upload.single('resume'), async (req, res) => {

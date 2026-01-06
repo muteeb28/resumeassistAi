@@ -7,6 +7,8 @@ import ATSOptimizePage from './components/ats-optimize-page'
 import { CreateResumeSimple } from './components/create-resume-simple'
 import { ResumeBuilder } from './components/resume-builder'
 import { LiveResumeBuilder } from './components/live-resume-builder'
+import { useEffect } from 'react'
+import { useUserStore } from './stores/useUserStore'
 
 const ResumeBuilderWrapper = () => {
   const { templateId } = useParams<{ templateId: string }>();
@@ -45,6 +47,12 @@ const ResumeBuilderWrapper = () => {
 };
 
 function App() {
+    const { checkAuth, checkingAuth } = useUserStore();
+    useEffect(() => {
+      checkAuth();
+    }, [checkAuth]);
+
+	if (checkingAuth) return <h1>loading...</h1>;
   return (
     <Router>
       <Routes>
@@ -60,3 +68,4 @@ function App() {
 }
 
 export default App
+
