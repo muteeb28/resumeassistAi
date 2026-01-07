@@ -146,7 +146,6 @@ export async function polishResumeText(text: string): Promise<string> {
  */
 export async function optimizeResumeWithProgress(
   file: File,
-  fileData: string,
   targetRole: string,
   onProgress: (update: ProgressUpdate) => void,
   originalPageCount?: number,
@@ -213,19 +212,18 @@ export async function optimizeResumeWithProgress(
 /**
  * Optimize resume using the backend API (legacy, non-streaming)
  */
-export async function optimizeResume(file: File, fileData: string, targetRole: string, originalPageCount?: number): Promise<OptimizationResult> {
+export async function optimizeResume(file: File, targetRole: string, originalPageCount?: number): Promise<OptimizationResult> {
   try {
     const formData = new FormData();
     formData.append('resume', file);
     formData.append('targetRole', targetRole);
-    formData.append('fileData', fileData);
     if (originalPageCount) {
       formData.append('originalPageCount', originalPageCount.toString());
     }
 
     console.log(` Sending optimization request for role: ${targetRole}`);
     console.log(` File: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-    console.log('this is file data', fileData);
+
     const response = await fetch(buildApiUrl('optimize-resume'), {
       method: 'POST',
       body: formData,

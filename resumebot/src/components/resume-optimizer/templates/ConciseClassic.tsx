@@ -1,6 +1,6 @@
 import React from 'react';
 import ResumePage from '../ResumePage';
-import { BulletList, ContactLine, SectionTitle, TechnologyLine } from '../ResumeSections';
+import { BulletList, ContactLine, SectionTitle } from '../ResumeSections';
 import { CONTACT_LABELS, SECTION_TITLES } from '../resumeConfig';
 import type { NormalizedResume, RenderState } from '../resumeUtils';
 
@@ -11,6 +11,7 @@ interface ConciseClassicProps {
 
 const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) => {
   const titles = SECTION_TITLES.conciseClassic;
+  const variant = 'single';
   const showHeader = renderState.pageIndex === undefined || renderState.pageIndex === 0;
   const hasContactInfo = Boolean(
     content.contact.email ||
@@ -24,7 +25,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
   const hasHeaderContent = Boolean(content.name || hasContactInfo);
   const shouldShowHeader = showHeader && hasHeaderContent;
 
-  const renderHeader = (variant: 'single' | 'multi') => (
+  const renderHeader = () => (
     <div className="border-b-2 border-gray-900 pb-4 mb-6">
       {content.name && (
         <h1 className="text-3xl font-bold text-gray-900 mb-1 tracking-tight">
@@ -37,9 +38,9 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
             content.contact.email,
             content.contact.phone,
             content.contact.location,
-            content.contact.linkedin && `${CONTACT_LABELS.linkedin}: ${content.contact.linkedin}`,
-            content.contact.github && `${CONTACT_LABELS.github}: ${content.contact.github}`,
-            content.contact.website && `${CONTACT_LABELS.website}: ${content.contact.website}`,
+            content.contact.linkedin && `${CONTACT_LABELS.linkedin}: ${content.contact.linkedin} `,
+            content.contact.github && `${CONTACT_LABELS.github}: ${content.contact.github} `,
+            content.contact.website && `${CONTACT_LABELS.website}: ${content.contact.website} `,
             ...(content.contact.links || [])
           ]}
           className="flex flex-wrap gap-x-4 text-sm text-gray-700 font-medium"
@@ -48,7 +49,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
     </div>
   );
 
-  const renderSummary = (variant: 'single' | 'multi') => (
+  const renderSummary = () => (
     content.summary ? (
       <div className="mb-6">
         <SectionTitle
@@ -63,7 +64,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
     ) : null
   );
 
-  const renderSkills = (variant: 'single' | 'multi') => (
+  const renderSkills = () => (
     content.skills.length > 0 ? (
       <div className="mb-6">
         <SectionTitle
@@ -83,7 +84,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
     ) : null
   );
 
-  const renderExperience = (variant: 'single' | 'multi') => (
+  const renderExperience = () => (
     content.experience.length > 0 ? (
       <div className="mb-6">
         <SectionTitle
@@ -139,7 +140,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
     ) : null
   );
 
-  const renderEducation = (variant: 'single' | 'multi') => (
+  const renderEducation = () => (
     content.education.length > 0 ? (
       <div className="mb-6">
         <SectionTitle
@@ -169,7 +170,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
     ) : null
   );
 
-  const renderProjects = (variant: 'single' | 'multi') => {
+  const renderProjects = () => {
     const projects = content.projects.filter((project) => {
       const name = project.name?.trim();
       const description = project.description?.trim();
@@ -221,7 +222,7 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
     );
   };
 
-  const renderCertifications = (variant: 'single' | 'multi') => (
+  const renderCertifications = () => (
     content.certifications.length > 0 ? (
       <div className="mb-6">
         <SectionTitle
@@ -246,13 +247,13 @@ const MinimalistAts: React.FC<ConciseClassicProps> = ({ content, renderState }) 
 
   return (
     <ResumePage className="mx-auto max-w-[800px] border-none shadow-none">
-      {shouldShowHeader ? renderHeader('single') : null}
-      {renderSummary('single')}
-      {renderExperience('single')}
-      {renderSkills('single')}
-      {renderEducation('single')}
-      {renderProjects('single')}
-      {renderCertifications('single')}
+      {shouldShowHeader ? renderHeader() : null}
+      {renderSummary()}
+      {renderExperience()}
+      {renderSkills()}
+      {renderEducation()}
+      {renderProjects()}
+      {renderCertifications()}
     </ResumePage>
   );
 };

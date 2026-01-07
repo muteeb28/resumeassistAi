@@ -97,7 +97,6 @@ export default function OptimizeResumePage() {
 
       const result = await resumeOptimizerApi.optimizeResumeWithProgress(
         uploadedFile.file,
-        '',
         selectedRole,
         (update: ProgressUpdate) => {
           setProgressUpdates(prev => [...prev, update]);

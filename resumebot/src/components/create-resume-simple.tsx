@@ -7,9 +7,7 @@ import { Button } from "./button";
 import TemplatePreview from "./resume-optimizer/TemplatePreview";
 import FinalResumePreview from "./resume-optimizer/FinalResumePreview";
 import { buildApiUrl, extractResumeData, parseResumeText, polishResumeText } from "../services/resumeOptimizerApi";
-import axiosInstance from "@/lib/axios";
 import { useUserStore } from '../stores/useUserStore'
-import { toast } from "react-hot-toast";
 
 type Step = "input" | "templates" | "preview";
 type InputMode = "upload" | "paste";
@@ -52,7 +50,7 @@ const toPixels = (value: string) => {
 const toStringList = (value: any): string[] => {
   if (!value) return [];
   if (Array.isArray(value)) {
-    return value.map((item) => String(item).trim()).filter(Boolean);
+    return value.map((item: any) => String(item).trim()).filter(Boolean);
   }
   if (typeof value === "string") {
     return value
@@ -61,7 +59,7 @@ const toStringList = (value: any): string[] => {
       .filter(Boolean);
   }
   if (typeof value === "object") {
-    return Object.values(value).flatMap((item) => toStringList(item));
+    return Object.values(value).flatMap((item: any) => toStringList(item));
   }
   return [];
 };
@@ -74,7 +72,7 @@ const countBullets = (entries: any[]) => {
     if (!entry) return total;
     const description = entry.description ?? entry.points ?? entry.bullets ?? entry.responsibilities ?? [];
     if (Array.isArray(description)) {
-      return total + description.filter((item) => String(item).trim()).length;
+      return total + description.filter((item: any) => String(item).trim()).length;
     }
     if (typeof description === "string") {
       return total + description.split(/\n|\u2022/).map((item) => item.trim()).filter(Boolean).length;
@@ -215,9 +213,9 @@ const buildEditableTextFromParsed = (data: any): string => {
           ? description.split("\n")
           : [];
       bullets
-        .map((item) => String(item).trim())
+        .map((item: any) => String(item).trim())
         .filter(Boolean)
-        .forEach((item) => lines.push(`- ${item}`));
+        .forEach((item: string) => lines.push(`- ${item}`));
       lines.push("");
     });
   }
@@ -300,7 +298,7 @@ export const CreateResumeSimple = () => {
   const resumeContentRef = useRef<HTMLDivElement | null>(null);
   const previewContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const { user } = useUserStore();
+  const { } = useUserStore();
 
   const resetFlow = () => {
     setStep("input");
@@ -518,44 +516,7 @@ export const CreateResumeSimple = () => {
     }
   };
 
-  	const handlePaymentGateway = async () => {
-		try {
-				let res = await axiosInstance.post("/payment/charge");
-			const { id, totalAmount } = res.data;
-	
-			// Razorpay options
-			const options = {
-				key: import.meta.env.VITE_RAZORPAY_KEY, // Replace with your Razorpay key ID
-				amount: totalAmount * 100, // Amount in paise
-				currency: "INR",
-				name: "resumeassitAi",
-				description: "Resume Creation Service",
-				order_id: id,
-				handler: function (response: any) {
-					window.location.href = `/purchase-success?payment_id=${response.razorpay_payment_id}&order_id=${response.razorpay_order_id}&token=${response.razorpay_signature}`;
-				},
-				prefill: {
-					name: user?.name,
-					email: user?.email,
-				},
-				theme: {
-					color: "#3399cc",
-				},
-			};
-	
-			// Initialize Razorpay
-			const razorpay = new window.Razorpay(options);
-			razorpay.open();
-	
-			razorpay.on("payment.failed", function (response: any) {
-				console.error("Payment failed:", response.error);
-				alert("Payment failed. Please try again.");
-			});
-		} catch (error: any) {
-			toast.error(error.response?.data?.error || "Error initiating payment");
-			console.error("Error initiating Razorpay payment:", error);
-		}
-	};
+
 
   return (
     <BackgroundRippleLayout tone="dark" contentClassName="resume-optimizer pt-16">

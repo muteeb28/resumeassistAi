@@ -18,15 +18,15 @@ export class DeepSeekOptimizationService {
   }
 
   async optimizeResume(
-    resumeText: string, 
-    targetRole: string, 
+    resumeText: string,
+    targetRole: string,
     jobDescription: string
   ): Promise<OptimizationResult> {
     console.log('🤖 Starting OpenAI optimization...');
     console.log('📝 Resume text length:', resumeText.length);
     console.log('🎯 Target role:', targetRole);
     console.log('📋 Job description length:', jobDescription.length);
-    
+
     try {
       const prompt = `
 You are a professional resume optimization expert. Analyze the following resume and optimize it for the target role based on the job description.
@@ -87,16 +87,16 @@ Focus on:
 
       const data = await response.json();
       console.log('✅ Received response from OpenAI API');
-      
+
       const content = data.choices[0]?.message?.content;
-      
+
       if (!content) {
         console.error('❌ No content in OpenAI response:', data);
         throw new Error('No content received from OpenAI API');
       }
 
       console.log('📄 OpenAI response length:', content.length);
-      
+
       // Parse the JSON response
       let result;
       try {
@@ -107,27 +107,27 @@ Focus on:
         console.log('Raw content:', content);
         throw new Error('Invalid JSON response from OpenAI API');
       }
-      
+
       const optimizationResult = {
         fixes: result.fixes || [],
         improvements: result.improvements || [],
         optimizedContent: result.optimizedContent || resumeText,
         template1: this.createFallbackTemplate(result.optimizedContent || resumeText, targetRole, 'professional'),
-        template2: this.createFallbackTemplate(result.optimizedContent || resumeText, targetRole, 'executive'),  
+        template2: this.createFallbackTemplate(result.optimizedContent || resumeText, targetRole, 'executive'),
         template3: this.createFallbackTemplate(result.optimizedContent || resumeText, targetRole, 'creative')
       };
-      
+
       console.log('✅ OpenAI optimization complete:', {
         fixes: optimizationResult.fixes.length,
         improvements: optimizationResult.improvements.length,
         contentLength: optimizationResult.optimizedContent.length
       });
-      
+
       return optimizationResult;
 
     } catch (error) {
       console.error('OpenAI optimization failed:', error);
-      
+
       // Return fallback optimization result
       console.log('🔄 Using fallback optimization...');
       const fallbackResult = this.getFallbackOptimization(resumeText, targetRole, jobDescription);
@@ -137,20 +137,20 @@ Focus on:
   }
 
   private getFallbackOptimization(
-    resumeText: string, 
-    targetRole: string, 
+    resumeText: string,
+    targetRole: string,
     jobDescription: string
   ): OptimizationResult {
     console.log('🔄 Creating fallback optimization with:', { resumeTextLength: resumeText.length, targetRole, jobDescriptionLength: jobDescription.length });
-    
+
     // Extract key skills and requirements from job description
     const skillKeywords = this.extractSkillKeywords(jobDescription);
-    const roleKeywords = this.extractRoleKeywords(targetRole);
-    
+    // const roleKeywords = extractKeywords(jobDescription);
+
     return {
       fixes: [
         "Enhanced action verbs throughout experience section",
-        "Added missing technical keywords from job requirements", 
+        "Added missing technical keywords from job requirements",
         "Improved quantification of achievements with specific metrics",
         "Optimized formatting for better ATS readability",
         "Strengthened professional summary to match target role"
@@ -174,34 +174,17 @@ Focus on:
   private extractSkillKeywords(jobDescription: string): string[] {
     // Simple keyword extraction logic
     const commonTechSkills = [
-      'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java', 
+      'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java',
       'AWS', 'Docker', 'Kubernetes', 'SQL', 'Git', 'API', 'REST', 'GraphQL',
       'MongoDB', 'PostgreSQL', 'Redis', 'Microservices', 'CI/CD', 'Agile'
     ];
-    
-    return commonTechSkills.filter(skill => 
+
+    return commonTechSkills.filter(skill =>
       jobDescription.toLowerCase().includes(skill.toLowerCase())
     );
   }
 
-  private extractRoleKeywords(targetRole: string): string[] {
-    const roleMap: { [key: string]: string[] } = {
-      'software engineer': ['development', 'coding', 'programming', 'software'],
-      'product manager': ['product strategy', 'roadmap', 'stakeholder', 'metrics'],
-      'data scientist': ['machine learning', 'analytics', 'statistics', 'data'],
-      'designer': ['UI/UX', 'design system', 'prototyping', 'user research'],
-      'marketing': ['campaigns', 'analytics', 'conversion', 'growth']
-    };
-    
-    const lowerRole = targetRole.toLowerCase();
-    for (const [key, keywords] of Object.entries(roleMap)) {
-      if (lowerRole.includes(key)) {
-        return keywords;
-      }
-    }
-    
-    return [];
-  }
+
 
   private createFallbackTemplate(
     resumeText: string,
@@ -213,9 +196,9 @@ Focus on:
     const name = this.extractName(lines) || 'Your Name';
     const email = this.extractEmail(resumeText) || 'your.email@email.com';
     const phone = this.extractPhone(resumeText) || '(555) 123-4567';
-    
+
     const baseContent = `${name}\n${targetRole}\n${email} | ${phone}\n\nPROFESSIONAL SUMMARY\nExperienced ${targetRole} with proven track record of delivering results and driving business impact.\n\nEXPERIENCE\n${this.extractExperience(resumeText)}\n\nSKILLS\n${this.extractSkills(resumeText)}\n\nEDUCATION\n${this.extractEducation(resumeText)}`;
-    
+
     switch (style) {
       case 'professional':
         return `PROFESSIONAL ATS VERSION:\n${baseContent}`;
@@ -227,7 +210,7 @@ Focus on:
         return baseContent;
     }
   }
-  
+
   private extractName(lines: string[]): string {
     // Look for name in first few lines
     for (const line of lines.slice(0, 3)) {
@@ -237,63 +220,63 @@ Focus on:
     }
     return 'Your Name';
   }
-  
+
   private extractEmail(text: string): string {
     const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
     return emailMatch ? emailMatch[0] : 'your.email@email.com';
   }
-  
+
   private extractPhone(text: string): string {
     const phoneMatch = text.match(/\(?\d{3}\)?[-\s]?\d{3}[-\s]?\d{4}/g);
     return phoneMatch ? phoneMatch[0] : '(555) 123-4567';
   }
-  
+
   private extractExperience(text: string): string {
     // Simple extraction of experience-related content
     const experienceKeywords = ['experience', 'work', 'employment', 'position', 'role', 'company'];
     const lines = text.split('\n');
-    const experienceLines = lines.filter(line => 
-      experienceKeywords.some(keyword => 
+    const experienceLines = lines.filter(line =>
+      experienceKeywords.some(keyword =>
         line.toLowerCase().includes(keyword)
       )
     );
-    
-    return experienceLines.length > 0 ? 
-      experienceLines.join('\n') : 
+
+    return experienceLines.length > 0 ?
+      experienceLines.join('\n') :
       'Professional experience with relevant skills and achievements';
   }
-  
+
   private extractSkills(text: string): string {
     // Extract skills mentioned in resume
     const commonSkills = ['JavaScript', 'Python', 'Java', 'React', 'Node.js', 'SQL', 'AWS', 'Git'];
-    const foundSkills = commonSkills.filter(skill => 
+    const foundSkills = commonSkills.filter(skill =>
       text.toLowerCase().includes(skill.toLowerCase())
     );
-    
-    return foundSkills.length > 0 ? 
-      foundSkills.join(', ') : 
+
+    return foundSkills.length > 0 ?
+      foundSkills.join(', ') :
       'Technical and professional skills relevant to the role';
   }
-  
+
   private extractEducation(text: string): string {
     // Look for education-related content
     const educationKeywords = ['education', 'degree', 'university', 'college', 'bachelor', 'master', 'phd'];
     const lines = text.split('\n');
-    const educationLines = lines.filter(line => 
-      educationKeywords.some(keyword => 
+    const educationLines = lines.filter(line =>
+      educationKeywords.some(keyword =>
         line.toLowerCase().includes(keyword)
       )
     );
-    
-    return educationLines.length > 0 ? 
-      educationLines.join('\n') : 
+
+    return educationLines.length > 0 ?
+      educationLines.join('\n') :
       'Relevant educational background';
   }
 
   // Extract text from uploaded file
   async extractTextFromFile(file: File): Promise<string> {
     console.log('📄 Extracting text from file:', file.name, 'Type:', file.type);
-    
+
     return new Promise(async (resolve, reject) => {
       if (file.type === 'text/plain') {
         const reader = new FileReader();
@@ -309,7 +292,7 @@ Focus on:
           // Read PDF as array buffer first
           const arrayBuffer = await file.arrayBuffer();
           const uint8Array = new Uint8Array(arrayBuffer);
-          
+
           // Try to extract basic text from PDF (simple approach)
           const pdfText = await this.extractPDFText(uint8Array);
           console.log('✅ PDF extracted, length:', pdfText.length);
@@ -352,18 +335,18 @@ EDUCATION
     const pdfString = Array.from(uint8Array)
       .map(byte => String.fromCharCode(byte))
       .join('');
-    
+
     // Extract text patterns commonly found in PDFs
     const textMatches = pdfString.match(/\([^\)]*\)/g) || [];
     const extractedText = textMatches
       .map(match => match.replace(/[\(\)]/g, ''))
       .filter(text => text.length > 1 && /[a-zA-Z]/.test(text))
       .join(' ');
-    
+
     if (extractedText.length < 50) {
       throw new Error('Could not extract sufficient text from PDF');
     }
-    
+
     return extractedText;
   }
 }

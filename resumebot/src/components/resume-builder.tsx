@@ -57,7 +57,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
     website: "",
     summary: ""
   });
-  
+
   const [experiences, setExperiences] = useState<Experience[]>([{
     id: "1",
     jobTitle: "",
@@ -96,7 +96,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
   };
 
   const updateExperience = (id: string, field: keyof Experience, value: string | boolean) => {
-    setExperiences(experiences.map(exp => 
+    setExperiences(experiences.map(exp =>
       exp.id === id ? { ...exp, [field]: value } : exp
     ));
   };
@@ -114,14 +114,14 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
   };
 
   const updateEducation = (id: string, field: keyof Education, value: string) => {
-    setEducation(education.map(edu => 
+    setEducation(education.map(edu =>
       edu.id === id ? { ...edu, [field]: value } : edu
     ));
   };
 
   const generateResume = async () => {
     console.log('🚀 Generate Resume button clicked!');
-    
+
     if (!jobDescription.trim()) {
       alert('Please enter a job description');
       return;
@@ -151,14 +151,14 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
 
       // Generate the customized resume using AI
       const generatedResumeData = await resumeGenerator.generateResume(
-        userData,
         jobDescription,
-        selectedTemplate.id
+        selectedTemplate.id,
+        userData
       );
 
       console.log('Generated AI resume data:', generatedResumeData);
       setGeneratedResume(generatedResumeData);
-      
+
     } catch (error) {
       console.error('Error generating resume:', error);
       alert('There was an error generating your resume. Please try again or contact support.');
@@ -170,7 +170,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
   // Show resume preview if generated
   if (generatedResume) {
     return (
-      <ResumePreview 
+      <ResumePreview
         resumeData={generatedResume}
         templateId={selectedTemplate.id}
         templateName={selectedTemplate.name}
@@ -199,11 +199,10 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
               {[1, 2, 3, 4].map((stepNum) => (
                 <div
                   key={stepNum}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
-                    step >= stepNum
+                  className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${step >= stepNum
                       ? 'bg-purple-600 text-white'
                       : 'bg-slate-700 text-slate-400'
-                  }`}
+                    }`}
                 >
                   {stepNum}
                 </div>
@@ -224,12 +223,12 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     <input
                       type="text"
                       value={personalDetails.fullName}
-                      onChange={(e) => setPersonalDetails({...personalDetails, fullName: e.target.value})}
+                      onChange={(e) => setPersonalDetails({ ...personalDetails, fullName: e.target.value })}
                       className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                       placeholder="John Smith"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-slate-300 text-sm font-medium mb-2">
                       Email *
@@ -237,7 +236,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     <input
                       type="email"
                       value={personalDetails.email}
-                      onChange={(e) => setPersonalDetails({...personalDetails, email: e.target.value})}
+                      onChange={(e) => setPersonalDetails({ ...personalDetails, email: e.target.value })}
                       className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                       placeholder="john@email.com"
                     />
@@ -250,7 +249,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     <input
                       type="tel"
                       value={personalDetails.phone}
-                      onChange={(e) => setPersonalDetails({...personalDetails, phone: e.target.value})}
+                      onChange={(e) => setPersonalDetails({ ...personalDetails, phone: e.target.value })}
                       className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                       placeholder="+1 (555) 123-4567"
                     />
@@ -263,7 +262,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     <input
                       type="text"
                       value={personalDetails.location}
-                      onChange={(e) => setPersonalDetails({...personalDetails, location: e.target.value})}
+                      onChange={(e) => setPersonalDetails({ ...personalDetails, location: e.target.value })}
                       className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                       placeholder="San Francisco, CA"
                     />
@@ -276,7 +275,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     <input
                       type="url"
                       value={personalDetails.linkedin}
-                      onChange={(e) => setPersonalDetails({...personalDetails, linkedin: e.target.value})}
+                      onChange={(e) => setPersonalDetails({ ...personalDetails, linkedin: e.target.value })}
                       className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                       placeholder="linkedin.com/in/johnsmith"
                     />
@@ -289,7 +288,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     <input
                       type="url"
                       value={personalDetails.website}
-                      onChange={(e) => setPersonalDetails({...personalDetails, website: e.target.value})}
+                      onChange={(e) => setPersonalDetails({ ...personalDetails, website: e.target.value })}
                       className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                       placeholder="johnsmith.dev"
                     />
@@ -302,7 +301,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                   </label>
                   <textarea
                     value={personalDetails.summary}
-                    onChange={(e) => setPersonalDetails({...personalDetails, summary: e.target.value})}
+                    onChange={(e) => setPersonalDetails({ ...personalDetails, summary: e.target.value })}
                     rows={4}
                     className="w-full p-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-purple-500 focus:outline-none"
                     placeholder="Brief summary of your professional background and key achievements..."
@@ -325,7 +324,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                   {experiences.map((exp, index) => (
                     <div key={exp.id} className="border border-slate-600 rounded-lg p-6">
                       <h3 className="text-lg font-semibold text-white mb-4">Experience #{index + 1}</h3>
-                      
+
                       <div className="grid md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <label className="block text-slate-300 text-sm font-medium mb-2">Job Title *</label>
@@ -337,7 +336,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                             placeholder="Software Engineer"
                           />
                         </div>
-                        
+
                         <div>
                           <label className="block text-slate-300 text-sm font-medium mb-2">Company *</label>
                           <input
@@ -412,7 +411,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
             {step === 3 && (
               <div>
                 <h2 className="text-2xl font-bold text-white mb-6">Education & Skills</h2>
-                
+
                 {/* Education */}
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4">
@@ -426,7 +425,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                     {education.map((edu, index) => (
                       <div key={edu.id} className="border border-slate-600 rounded-lg p-4">
                         <h4 className="text-lg font-medium text-white mb-3">Education #{index + 1}</h4>
-                        
+
                         <div className="grid md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-slate-300 text-sm font-medium mb-2">Degree</label>
@@ -438,7 +437,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                               placeholder="Bachelor of Science in Computer Science"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="block text-slate-300 text-sm font-medium mb-2">School</label>
                             <input
@@ -530,7 +529,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
                 <div className="mt-6 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
                   <h4 className="text-blue-400 font-semibold mb-2">💡 Pro Tip:</h4>
                   <p className="text-blue-300 text-sm">
-                    Include the complete job posting for best results. Our AI will identify key requirements, 
+                    Include the complete job posting for best results. Our AI will identify key requirements,
                     preferred skills, and company values to tailor your resume accordingly.
                   </p>
                 </div>
@@ -541,8 +540,8 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
             <div className="flex justify-between mt-8 pt-6 border-t border-slate-600">
               <div>
                 {step > 1 && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setStep(step - 1)}
                   >
                     ← Previous
@@ -552,14 +551,14 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
 
               <div>
                 {step < 4 ? (
-                  <Button 
+                  <Button
                     onClick={() => setStep(step + 1)}
                     disabled={step === 1 && (!personalDetails.fullName || !personalDetails.email)}
                   >
                     Next →
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     onClick={() => {
                       console.log('🚀 Generate Resume button clicked!');
                       console.log('📝 Job description length:', jobDescription.length);

@@ -75,7 +75,7 @@ const dedupeList = (items: string[]) => {
 
 const toStringList = (value: unknown): string[] => {
   if (Array.isArray(value)) {
-    return dedupeList(value.map((item) => String(item).trim()).filter(Boolean));
+    return dedupeList(value.map((item: any) => String(item).trim()).filter(Boolean));
   }
   if (typeof value === 'string') {
     return dedupeList(
@@ -97,7 +97,7 @@ const hasMeaningfulText = (value: string) => /[\p{L}\p{N}]/u.test(value);
 const toLinkList = (links: unknown): string[] => {
   if (!Array.isArray(links)) return [];
   return links
-    .map((link) => {
+    .map((link: any) => {
       if (typeof link === 'string') return link;
       if (link && typeof link === 'object') {
         const linkObj = link as { url?: unknown; href?: unknown; link?: unknown; label?: unknown; type?: unknown };
@@ -123,7 +123,7 @@ const toLinkList = (links: unknown): string[] => {
 const toCleanBulletList = (value: unknown): string[] => {
   if (Array.isArray(value)) {
     return value
-      .map((item) => (typeof item === 'string' || typeof item === 'number' ? String(item).trim() : ''))
+      .map((item: any) => (typeof item === 'string' || typeof item === 'number' ? String(item).trim() : ''))
       .filter((item) => hasMeaningfulText(item));
   }
   if (typeof value === 'string') {
@@ -210,7 +210,7 @@ const normalizeProjects = (entries: unknown): ResumeProject[] => {
   const cleanValue = (value: string) => value.replace(/^[\s\-\*\+|\u2022]+/, '').trim();
 
   return rawEntries
-    .map((entry: any) => {
+    .map((entry: any): ResumeProject | null => {
       if (typeof entry === 'string') {
         const cleaned = cleanValue(entry);
         if (!cleaned || isProjectHeading(cleaned) || !hasMeaningfulText(cleaned)) return null;
@@ -244,7 +244,7 @@ const normalizeProjects = (entries: unknown): ResumeProject[] => {
         technologies: technologies.length > 0 ? technologies : undefined
       };
     })
-    .filter((entry): entry is ResumeProject => Boolean(entry));
+    .filter((entry): entry is ResumeProject => entry !== null);
 };
 
 const detectStyle = (data: any): ResumeStyle => {
@@ -463,10 +463,10 @@ export const deriveRenderState = (
   const resolvedPageCount = forceSingle
     ? 1
     : Math.max(
-        normalizedPageCount || 1,
-        contentBasedPageCount,
-        modeOverride === 'multi' ? 2 : 1
-      );
+      normalizedPageCount || 1,
+      contentBasedPageCount,
+      modeOverride === 'multi' ? 2 : 1
+    );
 
   const isMultiPage = modeOverride === 'multi'
     ? true

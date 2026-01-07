@@ -1,5 +1,4 @@
-"use client";
-import React, { useState } from "react";
+import { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
   IconArrowLeft,
@@ -184,7 +183,7 @@ const Dashboard = () => {
   ]);
 
   const addRow = () => {
-    setRows((prev) => [
+    setRows((prev: JobRow[]) => [
       ...prev,
       {
         id: createId("row"),
@@ -201,7 +200,7 @@ const Dashboard = () => {
   };
 
   const deleteRow = (rowId: string) => {
-    setRows((prev) => prev.filter((row) => row.id !== rowId));
+    setRows((prev: JobRow[]) => prev.filter((row: JobRow) => row.id !== rowId));
   };
 
   const updateRowField = (
@@ -209,14 +208,14 @@ const Dashboard = () => {
     field: keyof JobRow,
     value: string
   ) => {
-    setRows((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
+    setRows((prev: JobRow[]) =>
+      prev.map((row: JobRow) => (row.id === rowId ? { ...row, [field]: value } : row))
     );
   };
 
   const updateCustomField = (rowId: string, columnId: string, value: string) => {
-    setRows((prev) =>
-      prev.map((row) =>
+    setRows((prev: JobRow[]) =>
+      prev.map((row: JobRow) =>
         row.id === rowId
           ? { ...row, custom: { ...row.custom, [columnId]: value } }
           : row
@@ -225,16 +224,16 @@ const Dashboard = () => {
   };
 
   const addColumn = () => {
-    setCustomColumns((prev) => [
+    setCustomColumns((prev: CustomColumn[]) => [
       ...prev,
       { id: createId("column"), label: "New Column" },
     ]);
   };
 
   const deleteColumn = (columnId: string) => {
-    setCustomColumns((prev) => prev.filter((column) => column.id !== columnId));
-    setRows((prev) =>
-      prev.map((row) => {
+    setCustomColumns((prev: CustomColumn[]) => prev.filter((column: CustomColumn) => column.id !== columnId));
+    setRows((prev: JobRow[]) =>
+      prev.map((row: JobRow) => {
         const nextCustom = { ...row.custom };
         delete nextCustom[columnId];
         return { ...row, custom: nextCustom };
@@ -243,8 +242,8 @@ const Dashboard = () => {
   };
 
   const updateColumnLabel = (columnId: string, value: string) => {
-    setCustomColumns((prev) =>
-      prev.map((column) =>
+    setCustomColumns((prev: CustomColumn[]) =>
+      prev.map((column: CustomColumn) =>
         column.id === columnId ? { ...column, label: value } : column
       )
     );
@@ -342,7 +341,7 @@ const Dashboard = () => {
                     <select
                       value={row.status}
                       onChange={(event) =>
-                        updateRowField(row.id, "status", event.target.value)
+                        updateRowField(row.id, "status", event.target.value as StatusOption)
                       }
                       className={cn(
                         "rounded-full px-2 py-1 text-[11px] font-semibold",

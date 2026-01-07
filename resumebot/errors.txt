@@ -1,0 +1,29 @@
+src/components/background-ripple-effect-demo.tsx(2,1): error TS6133: 'React' is declared but its value is never read.
+src/components/create-resume-simple-working.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/components/create-resume-simple-working.tsx(3,1): error TS6133: 'Button' is declared but its value is never read.
+src/components/create-resume-simple.tsx(521,10): error TS6133: 'handlePaymentGateway' is declared but its value is never read.
+src/components/create-resume-simple.tsx(538,18): error TS2339: Property 'name' does not exist on type 'User'.
+src/components/create-resume-simple.tsx(547,32): error TS2339: Property 'Razorpay' does not exist on type 'Window & typeof globalThis'.
+src/components/optimize-resume-page-old.tsx(217,7): error TS6133: 'PreviewModal' is declared but its value is never read.
+src/components/optimize-resume-page-old.tsx(659,10): error TS6133: 'jobDescription' is declared but its value is never read.
+src/components/optimize-resume-page-old.tsx(744,37): error TS18046: 'error' is of type 'unknown'.
+src/components/optimize-resume-page-old.tsx(839,9): error TS6133: 'handleBackToJobDescription' is declared but its value is never read.
+src/components/resume-builder.tsx(154,9): error TS2345: Argument of type '{ personalDetails: PersonalDetails; experiences: Experience[]; education: Education[]; skills: string; }' is not assignable to parameter of type 'string'.
+src/components/resume-optimizer/resumeUtils.ts(212,3): error TS2322: Type '({ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; } | null)[]' is not assignable to type 'ResumeProject[]'.
+  Type '{ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; } | null' is not assignable to type 'ResumeProject'.
+    Type 'null' is not assignable to type 'ResumeProject'.
+src/components/resume-optimizer/resumeUtils.ts(247,31): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ResumeProject' is not assignable to type '{ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; } | null'.
+    Type 'ResumeProject' is not assignable to type '{ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; }'.
+      Type 'ResumeProject' is not assignable to type '{ name: any; description: any; technologies: string[] | undefined; }'.
+        Property 'name' is optional in type 'ResumeProject' but required in type '{ name: any; description: any; technologies: string[] | undefined; }'.
+src/components/resume-optimizer/templates/ConciseClassic.tsx(3,49): error TS6133: 'TechnologyLine' is declared but its value is never read.
+src/components/resume-optimizer/templates/ConciseClassic.tsx(27,25): error TS6133: 'variant' is declared but its value is never read.
+src/components/resume-optimizer/templates/ConciseClassic.tsx(51,26): error TS6133: 'variant' is declared but its value is never read.
+src/components/resume-optimizer/templates/ConciseClassic.tsx(142,28): error TS6133: 'variant' is declared but its value is never read.
+src/components/resume-optimizer/templates/ConciseClassic.tsx(172,27): error TS6133: 'variant' is declared but its value is never read.
+src/components/resume-optimizer/templates/ConciseClassic.tsx(224,33): error TS6133: 'variant' is declared but its value is never read.
+src/components/sidebar-demo.tsx(2,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/loader.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+src/services/deepseekOptimization.ts(148,11): error TS6133: 'roleKeywords' is declared but its value is never read.
+src/services/resumeOptimizerApi.ts(149,3): error TS6133: 'fileData' is declared but its value is never read.

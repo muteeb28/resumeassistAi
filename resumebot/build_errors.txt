@@ -1,0 +1,16 @@
+﻿src/components/create-resume-simple.tsx(10,1): error TS6133: 'axiosInstance' is declared but its value is never read.
+src/components/create-resume-simple.tsx(12,1): error TS6133: 'toast' is declared but its value is never read.
+src/components/create-resume-simple.tsx(303,9): error TS6133: 'user' is declared but its value is never read.
+src/components/optimize-resume-page-old.tsx(217,7): error TS6133: 'PreviewModal' is declared but its value is never read.
+src/components/optimize-resume-page-old.tsx(659,10): error TS6133: 'jobDescription' is declared but its value is never read.
+src/components/optimize-resume-page-old.tsx(744,37): error TS18046: 'error' is of type 'unknown'.
+src/components/optimize-resume-page-old.tsx(839,9): error TS6133: 'handleBackToJobDescription' is declared but its value is never read.
+src/components/optimize-resume-page.tsx(106,9): error TS2554: Expected 3-5 arguments, but got 6.
+src/components/resume-optimizer/resumeUtils.ts(212,3): error TS2322: Type '({ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; } | null)[]' is not assignable to type 'ResumeProject[]'.
+  Type '{ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; } | null' is not assignable to type 'ResumeProject'.
+    Type 'null' is not assignable to type 'ResumeProject'.
+src/components/resume-optimizer/resumeUtils.ts(247,31): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'ResumeProject' is not assignable to type '{ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; } | null'.
+    Type 'ResumeProject' is not assignable to type '{ name: string; description?: undefined; technologies?: undefined; } | { name: any; description: any; technologies: string[] | undefined; }'.
+      Type 'ResumeProject' is not assignable to type '{ name: any; description: any; technologies: string[] | undefined; }'.
+        Property 'name' is optional in type 'ResumeProject' but required in type '{ name: any; description: any; technologies: string[] | undefined; }'.

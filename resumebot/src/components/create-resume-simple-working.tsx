@@ -1,6 +1,4 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from './button';
 import { Navbar } from './navbar';
 
 export const CreateResumeSimpleWorking = () => {
@@ -39,7 +37,7 @@ export const CreateResumeSimpleWorking = () => {
               >
                 {/* FAANGPath Simple Template */}
                 {template.id === 'faangpath-simple' ? (
-                  <div className="w-full aspect-[8.5/11] bg-white rounded-lg shadow-2xl overflow-hidden transform scale-[0.65] origin-top" style={{fontFamily: 'Times, serif', fontSize: '5px', lineHeight: '1.1'}}>
+                  <div className="w-full aspect-[8.5/11] bg-white rounded-lg shadow-2xl overflow-hidden transform scale-[0.65] origin-top" style={{ fontFamily: 'Times, serif', fontSize: '5px', lineHeight: '1.1' }}>
                     <div className="min-h-full p-6">
                       {/* Header */}
                       <div className="text-center mb-2">
@@ -54,7 +52,7 @@ export const CreateResumeSimpleWorking = () => {
                       <div className="mb-2">
                         <h2 className="text-sm font-bold text-black mb-1 uppercase">Objective</h2>
                         <p className="text-sm text-black leading-tight text-justify">
-                          To obtain a challenging position in software engineering where I can apply my technical skills 
+                          To obtain a challenging position in software engineering where I can apply my technical skills
                           and contribute to innovative projects while growing professionally in a dynamic environment.
                         </p>
                       </div>
@@ -117,7 +115,7 @@ export const CreateResumeSimpleWorking = () => {
                               <li>• Implemented user authentication and payment processing</li>
                             </ul>
                           </div>
-                          
+
                           <div>
                             <p className="text-sm font-semibold text-black">Machine Learning Classifier</p>
                             <ul className="text-sm text-black pl-4 space-y-0">
@@ -167,10 +165,10 @@ export const CreateResumeSimpleWorking = () => {
                   </div>
                 ) : template.id === 'deedy-reversed' ? (
                   <div className="w-full aspect-[8.5/11] bg-white rounded-lg shadow-2xl overflow-hidden transform scale-[0.75] origin-top">
-                    <div className="h-full p-4" style={{fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif'}}>
+                    <div className="h-full p-4" style={{ fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif' }}>
                       {/* Header */}
                       <div className="text-center mb-3">
-                        <h1 className="text-3xl font-light text-black mb-2" style={{letterSpacing: '6px', fontWeight: 300}}>DEEDY RESUME</h1>
+                        <h1 className="text-3xl font-light text-black mb-2" style={{ letterSpacing: '6px', fontWeight: 300 }}>DEEDY RESUME</h1>
                         <div className="text-sm text-black">
                           123 Main Street | Anytown, State 12345 | (555) 123-4567 | hello@deedy.io
                         </div>
@@ -181,8 +179,8 @@ export const CreateResumeSimpleWorking = () => {
                         <div className="w-3/5 space-y-4">
                           {/* Experience */}
                           <div>
-                            <h2 className="text-sm font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px', letterSpacing: '1px'}}>Experience</h2>
-                            
+                            <h2 className="text-sm font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px', letterSpacing: '1px' }}>Experience</h2>
+
                             <div className="mb-3">
                               <div className="flex justify-between items-baseline mb-1">
                                 <div>
@@ -216,8 +214,8 @@ export const CreateResumeSimpleWorking = () => {
 
                           {/* Research */}
                           <div>
-                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px'}}>Research</h2>
-                            
+                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px' }}>Research</h2>
+
                             <div className="mb-2">
                               <div className="flex justify-between items-baseline mb-1">
                                 <div>
@@ -235,8 +233,8 @@ export const CreateResumeSimpleWorking = () => {
 
                           {/* Projects */}
                           <div>
-                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px'}}>Projects</h2>
-                            
+                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px' }}>Projects</h2>
+
                             <div className="mb-2">
                               <p className="text-sm font-bold text-black mb-1">Coursera Performance Analysis | <span className="font-normal">Python</span></p>
                               <ul className="text-sm text-black ml-4">
@@ -250,7 +248,7 @@ export const CreateResumeSimpleWorking = () => {
                         <div className="w-2/5 space-y-4">
                           {/* Education */}
                           <div>
-                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px'}}>Education</h2>
+                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px' }}>Education</h2>
                             <div>
                               <p className="text-sm font-bold text-black">Cornell University</p>
                               <p className="text-sm text-black">BS in Computer Science</p>
@@ -261,7 +259,7 @@ export const CreateResumeSimpleWorking = () => {
 
                           {/* Skills */}
                           <div>
-                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px'}}>Skills</h2>
+                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px' }}>Skills</h2>
                             <div className="space-y-4">
                               <div>
                                 <p className="text-sm font-bold text-black">Programming:</p>
@@ -276,7 +274,7 @@ export const CreateResumeSimpleWorking = () => {
 
                           {/* Awards */}
                           <div>
-                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px'}}>Awards</h2>
+                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px' }}>Awards</h2>
                             <div className="text-sm text-black space-y-1">
                               <p>Dean's List (Fall 2012, Spring 2013)</p>
                               <p>USACO Finalist 2012</p>
@@ -286,7 +284,7 @@ export const CreateResumeSimpleWorking = () => {
 
                           {/* Links */}
                           <div>
-                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{borderBottom: '1px solid black', paddingBottom: '2px'}}>Links</h2>
+                            <h2 className="text-base font-bold text-black mb-2 uppercase" style={{ borderBottom: '1px solid black', paddingBottom: '2px' }}>Links</h2>
                             <div className="text-sm text-black space-y-1">
                               <p>github.com/deedy</p>
                               <p>linkedin.com/in/deedy</p>
@@ -298,10 +296,10 @@ export const CreateResumeSimpleWorking = () => {
                     </div>
                   </div>
                 ) : template.id === 'luxsleek-cv' ? (
-                  <div className="w-full aspect-[8.5/11] bg-white rounded-lg shadow-2xl overflow-hidden transform scale-[0.65] origin-top" style={{fontFamily: 'Fira Sans, sans-serif', fontSize: '5px', lineHeight: '1.1'}}>
+                  <div className="w-full aspect-[8.5/11] bg-white rounded-lg shadow-2xl overflow-hidden transform scale-[0.65] origin-top" style={{ fontFamily: 'Fira Sans, sans-serif', fontSize: '5px', lineHeight: '1.1' }}>
                     <div className="h-full flex">
                       {/* Left Column - Dark Blue Sidebar */}
-                      <div className="w-1/3 text-white p-4" style={{backgroundColor: '#304263'}}>
+                      <div className="w-1/3 text-white p-4" style={{ backgroundColor: '#304263' }}>
                         {/* Profile Photo */}
                         <div className="text-center mb-2">
                           <div className="w-16 h-16 bg-gray-300 rounded-full mx-auto mb-2 overflow-hidden border-2 border-white/30">
@@ -321,7 +319,7 @@ export const CreateResumeSimpleWorking = () => {
                         <div className="mb-2">
                           <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest border-b border-white/30 pb-1">Profile</h3>
                           <p className="text-sm text-blue-100 leading-tight">
-                            Experienced data scientist with expertise in machine learning, 
+                            Experienced data scientist with expertise in machine learning,
                             statistical analysis, and business intelligence solutions for enterprise clients.
                           </p>
                         </div>
@@ -365,25 +363,25 @@ export const CreateResumeSimpleWorking = () => {
                             <div>
                               <p className="text-blue-100 mb-1">Python</p>
                               <div className="w-full bg-blue-800/50 rounded h-1">
-                                <div className="bg-white h-1 rounded" style={{width: '90%'}}></div>
+                                <div className="bg-white h-1 rounded" style={{ width: '90%' }}></div>
                               </div>
                             </div>
                             <div>
                               <p className="text-blue-100 mb-1">Machine Learning</p>
                               <div className="w-full bg-blue-800/50 rounded h-1">
-                                <div className="bg-white h-1 rounded" style={{width: '85%'}}></div>
+                                <div className="bg-white h-1 rounded" style={{ width: '85%' }}></div>
                               </div>
                             </div>
                             <div>
                               <p className="text-blue-100 mb-1">SQL</p>
                               <div className="w-full bg-blue-800/50 rounded h-1">
-                                <div className="bg-white h-1 rounded" style={{width: '80%'}}></div>
+                                <div className="bg-white h-1 rounded" style={{ width: '80%' }}></div>
                               </div>
                             </div>
                             <div>
                               <p className="text-blue-100 mb-1">Tableau</p>
                               <div className="w-full bg-blue-800/50 rounded h-1">
-                                <div className="bg-white h-1 rounded" style={{width: '75%'}}></div>
+                                <div className="bg-white h-1 rounded" style={{ width: '75%' }}></div>
                               </div>
                             </div>
                           </div>
@@ -394,7 +392,7 @@ export const CreateResumeSimpleWorking = () => {
                       <div className="flex-1 p-4">
                         {/* Experience */}
                         <div className="mb-2">
-                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{color: '#304263', borderColor: '#304263'}}>Experience</h2>
+                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{ color: '#304263', borderColor: '#304263' }}>Experience</h2>
                           <div className="space-y-3">
                             <div>
                               <div className="flex justify-between items-start mb-1">
@@ -411,7 +409,7 @@ export const CreateResumeSimpleWorking = () => {
                                 <li>• Collaborated with product teams to integrate ML models into production systems</li>
                               </ul>
                             </div>
-                            
+
                             <div>
                               <div className="flex justify-between items-start mb-1">
                                 <div>
@@ -431,7 +429,7 @@ export const CreateResumeSimpleWorking = () => {
 
                         {/* Education */}
                         <div className="mb-2">
-                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{color: '#304263', borderColor: '#304263'}}>Education</h2>
+                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{ color: '#304263', borderColor: '#304263' }}>Education</h2>
                           <div className="space-y-4">
                             <div className="flex justify-between items-start">
                               <div>
@@ -454,7 +452,7 @@ export const CreateResumeSimpleWorking = () => {
 
                         {/* Additional Education */}
                         <div className="mb-2">
-                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{color: '#304263', borderColor: '#304263'}}>Additional Education</h2>
+                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{ color: '#304263', borderColor: '#304263' }}>Additional Education</h2>
                           <div className="text-sm text-black space-y-1">
                             <p>• Machine Learning Specialization - Stanford University (Coursera), 2020</p>
                             <p>• AWS Certified Solutions Architect - Amazon Web Services, 2021</p>
@@ -465,7 +463,7 @@ export const CreateResumeSimpleWorking = () => {
 
                         {/* Hobbies */}
                         <div>
-                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{color: '#304263', borderColor: '#304263'}}>Hobbies</h2>
+                          <h2 className="text-sm font-bold mb-2 uppercase tracking-widest border-b-2 pb-1" style={{ color: '#304263', borderColor: '#304263' }}>Hobbies</h2>
                           <div className="text-sm text-black">
                             <p>Photography, Rock Climbing, Chess, Contributing to Open Source Projects</p>
                           </div>
