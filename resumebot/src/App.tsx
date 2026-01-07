@@ -13,6 +13,7 @@ import JobTrackerPage from './components/job-tracker-page'
 import LoginPage from './components/login-page'
 import SignupPage from './components/signup-page'
 import { Toaster } from 'react-hot-toast'
+import { LoaderFive } from './components/ui/loader'
 
 const ResumeBuilderWrapper = () => {
   const { templateId } = useParams<{ templateId: string }>();
@@ -56,7 +57,13 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
-  if (checkingAuth) return <h1>loading...</h1>;
+  if (checkingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <LoaderFive text="Checking authentication..." />
+      </div>
+    );
+  }
   return (
     <Router>
       <Toaster position="top-right" />

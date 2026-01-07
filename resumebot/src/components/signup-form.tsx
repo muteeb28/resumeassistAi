@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "../stores/useUserStore";
 import { useNavigate } from "react-router-dom";
+import { LoaderFive } from "@/components/ui/loader";
 
 export default function SignupForm() {
   const [username, setUsername] = useState("");
@@ -82,8 +83,16 @@ export default function SignupForm() {
           type="submit"
           disabled={loading}
         >
-          {loading ? "Signing up..." : "Sign up →"}
-          <BottomGradient />
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <LoaderFive text="" size="sm" className="gap-0" />
+            </div>
+          ) : (
+            <>
+              Sign up →
+              <BottomGradient />
+            </>
+          )}
         </button>
 
         <p className="mt-4 text-center text-sm text-neutral-600 dark:text-neutral-300">

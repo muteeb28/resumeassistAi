@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useUserStore } from "../stores/useUserStore";
 import { useNavigate } from "react-router-dom";
+import { LoaderFive } from "@/components/ui/loader";
 
 export default function SignupFormDemo() {
   const [email, setEmail] = useState("");
@@ -39,6 +40,7 @@ export default function SignupFormDemo() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
         </LabelInputContainer>
         <LabelInputContainer className="mb-8">
@@ -50,6 +52,7 @@ export default function SignupFormDemo() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            disabled={loading}
           />
         </LabelInputContainer>
 
@@ -58,8 +61,16 @@ export default function SignupFormDemo() {
           type="submit"
           disabled={loading}
         >
-          {loading ? "Logging in..." : "Log in →"}
-          <BottomGradient />
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <LoaderFive text="" size="sm" className="gap-0" />
+            </div>
+          ) : (
+            <>
+              Log in →
+              <BottomGradient />
+            </>
+          )}
         </button>
 
         <p className="mt-4 text-center text-sm text-neutral-600 dark:text-neutral-300">
