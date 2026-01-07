@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PlayfulHero, AnimatedText } from "./playful-hero";
 import { Button } from "./button";
 import { PinContainer } from "./3d-pin";
@@ -9,8 +10,12 @@ import { PaymentSection } from "./payment-section";
 import { AnimatedTestimonials } from "./animated-testimonials";
 import { motion } from "motion/react";
 import { BackgroundRippleLayout } from "./background-ripple-layout";
+import SidebarDemo from "./sidebar-demo";
+import HrEmailsTable from "./hr-emails-table";
 
 export function AnimatedPinDemo() {
+  const [jobTrackerView, setJobTrackerView] = useState<"tracker" | "emails">("tracker");
+
   return (
     <BackgroundRippleLayout tone="dark">
       {/* Navigation */}
@@ -55,7 +60,7 @@ export function AnimatedPinDemo() {
             className="text-center"
           >
             <p className="text-slate-400 text-sm mb-4">
-              ⭐ Trusted by 10,000+ professionals worldwide
+              Trusted by 10,000+ professionals worldwide
             </p>
             <div className="flex items-center justify-center gap-8 opacity-60">
               <div className="text-slate-400 text-xs font-semibold">Google</div>
@@ -123,59 +128,71 @@ export function AnimatedPinDemo() {
               Job Tracker, Your Way
             </h2>
             <p className="text-slate-400 text-lg mb-6">
-              Keep your pipeline organized with a cloud tracker or export everything to Google Sheets.
+              Switch between a cloud tracker and Sheets exports while keeping outreach in one place.
             </p>
             <div className="space-y-3 text-slate-300">
               <div className="flex items-center gap-3">
                 <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
-                <span>Stage-based pipeline with reminders</span>
+                <span>Cloud job tracker</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                <span>Save HR contacts and outreach history</span>
+                <span>Google Sheets export</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="w-2 h-2 bg-emerald-400 rounded-full"></span>
-                <span>One-click export to Google Sheets</span>
+                <span>HR cold email templates</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 bg-sky-400 rounded-full"></span>
+                <span>Follow-up reminders</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
+                <span>Application status dashboard</span>
               </div>
             </div>
           </div>
-          <div className="bg-slate-900/50 border border-slate-700 rounded-2xl p-8">
-            <div className="space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-300 font-bold text-sm">
-                  01
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold mb-1">Cloud Tracker</h3>
-                  <p className="text-slate-400 text-sm">
-                    Kanban-style boards to see every role at a glance.
-                  </p>
-                </div>
+          <div className="bg-slate-900/50 border border-slate-700 rounded-2xl p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-500">Workspace</p>
+                <h3 className="text-white font-semibold text-lg">Job Tracker Preview</h3>
               </div>
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-300 font-bold text-sm">
-                  02
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold mb-1">Google Sheets Export</h3>
-                  <p className="text-slate-400 text-sm">
-                    Send your tracker to Sheets anytime for sharing or backups.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-300 font-bold text-sm">
-                  03
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold mb-1">HR Cold Email Templates</h3>
-                  <p className="text-slate-400 text-sm">
-                    Ready-to-send outreach copy with follow-up reminders.
-                  </p>
-                </div>
+              <div className="flex items-center gap-2 rounded-full bg-slate-950/70 border border-slate-800 p-1">
+                <button
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition ${
+                    jobTrackerView === "tracker"
+                      ? "bg-white text-black shadow"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                  onClick={() => setJobTrackerView("tracker")}
+                  type="button"
+                >
+                  Job Tracker UI
+                </button>
+                <button
+                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition ${
+                    jobTrackerView === "emails"
+                      ? "bg-white text-black shadow"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                  onClick={() => setJobTrackerView("emails")}
+                  type="button"
+                >
+                  HR Emails
+                </button>
               </div>
             </div>
+
+            {jobTrackerView === "tracker" ? (
+              <SidebarDemo />
+            ) : (
+              <HrEmailsTable
+                className="border border-slate-800/60 bg-white/95"
+                tableClassName="max-h-[360px]"
+              />
+            )}
           </div>
         </div>
       </section>
@@ -242,33 +259,55 @@ export function AnimatedPinDemo() {
 
         <div className="flex justify-center">
           <PinContainer
-            title="Get Started Free"
-            href="#"
+            title="Get the early-apply edge"
+            href="https://levelup-8csx.vercel.app/jobs"
           >
             <div className="flex basis-full flex-col p-6 tracking-tight text-slate-100/50 sm:basis-1/2 w-[24rem] h-[20rem]">
               <h3 className="max-w-xs !pb-2 !m-0 font-bold text-xl text-slate-100">
-                Start Your Success Story
+                Get the Early-Apply Edge
               </h3>
               <div className="text-base !m-0 !p-0 font-normal mb-4">
                 <span className="text-slate-300">
-                  Create your first professional resume in under 10 minutes. No credit card required.
+                  Generate a recruiter-ready resume in 2 minutes, then apply fast.
                 </span>
               </div>
               <div className="flex flex-col gap-3 text-sm text-slate-400">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
-                  Free forever plan
+                  Generate resume in 2 minutes
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                  Unlimited downloads
+                  Download instantly
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                  24/7 AI assistance
+                  Apply in minutes
                 </div>
               </div>
-              <div className="flex flex-1 w-full rounded-lg mt-4 bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-500" />
+              <div className="mt-4 flex flex-1 w-full items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-500">
+                <div className="relative flex items-center gap-2 text-white">
+                  <span className="text-3xl font-extrabold tracking-[0.18em]">
+                    LEVEL
+                  </span>
+                  <span className="relative text-3xl font-extrabold tracking-[0.18em]">
+                    UP
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="absolute -top-7 right-1 h-7 w-7"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M12 22V4" />
+                      <path d="M5 11l7-7 7 7" />
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
           </PinContainer>
         </div>

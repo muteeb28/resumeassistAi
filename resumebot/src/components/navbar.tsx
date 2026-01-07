@@ -12,9 +12,9 @@ export const Navbar = ({ className }: { className?: string }) => {
   const { user, logout } = useUserStore();
 
   const navItems = [
-    { name: "Job Tracker", href: "#job-tracker" },
-    { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#pricing" }
+    { name: "Job Tracker", href: "/job-tracker" },
+    { name: "Features", href: "/#features" },
+    { name: "Pricing", href: "/#pricing" }
   ];
 
   return (
@@ -89,12 +89,12 @@ export const Navbar = ({ className }: { className?: string }) => {
                   </div>
                 </div>
               ) : (
-                <Button variant="ghost" size="sm" onClick={() => setShowAuth(true)}>
+                <Button variant="ghost" size="sm" onClick={() => window.location.href = "/login"}>
                   Login
                 </Button>
               )
             }
-            <Button size="sm">
+            <Button size="sm" onClick={() => window.location.href = "/signup"}>
               Get Started
             </Button>
           </motion.div>
@@ -165,13 +165,20 @@ export const Navbar = ({ className }: { className?: string }) => {
                       variant="ghost"
                       size="sm"
                       className="w-full"
-                      onClick={() => { setShowAuth(true); setIsOpen(false); }}
+                      onClick={() => {
+                        setIsOpen(false);
+                        window.location.href = "/login";
+                      }}
                     >
                       Login
                     </Button>
                     <Button
                       size="sm"
                       className="w-full"
+                      onClick={() => {
+                        setIsOpen(false);
+                        window.location.href = "/signup";
+                      }}
                     >
                       Get Started
                     </Button>
@@ -183,6 +190,6 @@ export const Navbar = ({ className }: { className?: string }) => {
         </AnimatePresence>
       </div>
       <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
-    </motion.nav>
+    </motion.nav >
   );
 };

@@ -9,6 +9,10 @@ import { ResumeBuilder } from './components/resume-builder'
 import { LiveResumeBuilder } from './components/live-resume-builder'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/useUserStore'
+import JobTrackerPage from './components/job-tracker-page'
+import LoginPage from './components/login-page'
+import SignupPage from './components/signup-page'
+import { Toaster } from 'react-hot-toast'
 
 const ResumeBuilderWrapper = () => {
   const { templateId } = useParams<{ templateId: string }>();
@@ -47,19 +51,23 @@ const ResumeBuilderWrapper = () => {
 };
 
 function App() {
-    const { checkAuth, checkingAuth } = useUserStore();
-    useEffect(() => {
-      checkAuth();
-    }, [checkAuth]);
+  const { checkAuth, checkingAuth } = useUserStore();
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
-	if (checkingAuth) return <h1>loading...</h1>;
+  if (checkingAuth) return <h1>loading...</h1>;
   return (
     <Router>
+      <Toaster position="top-right" />
       <Routes>
         <Route path="/" element={<AnimatedPinDemo />} />
         <Route path="/optimize" element={<OptimizeResumePage />} />
         <Route path="/ats-optimize" element={<ATSOptimizePage />} />
         <Route path="/create" element={<CreateResumeSimple />} />
+        <Route path="/job-tracker" element={<JobTrackerPage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/build/:templateId" element={<ResumeBuilderWrapper />} />
         <Route path="/live-builder/:templateId" element={<LiveResumeBuilder />} />
       </Routes>

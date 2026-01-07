@@ -2,17 +2,42 @@ import { create } from "zustand";
 import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
 
-export const useUserStore = create((set, get) => ({
+interface User {
+	id: string;
+	username: string;
+	email: string;
+	// Add other user properties as needed
+}
+
+interface SignupData {
+	username: string;
+	email: string;
+	password: string;
+	confirmPassword: string;
+}
+
+interface UserStore {
+	user: User | null;
+	loading: boolean;
+	checkingAuth: boolean;
+	signup: (data: SignupData) => Promise<{ success: boolean } | undefined>;
+	login: (email: string, password: string) => Promise<{ success: boolean } | undefined>;
+	logout: () => Promise<void>;
+	checkAuth: () => Promise<void>;
+}
+
+export const useUserStore = create<UserStore>((set) => ({
 	user: null,
 	loading: false,
 	checkingAuth: true,
 
-	signup: async ({ username, email, password, confirmPassword }) => {
+	signup: async ({ username, email, password, confirmPassword }: SignupData) => {
 		set({ loading: true });
 
 		if (password !== confirmPassword) {
 			set({ loading: false });
-			return toast.error("Passwords do not match");
+			toast.error("Passwords do not match");
+			return;
 		}
 
 		try {
@@ -21,12 +46,12 @@ export const useUserStore = create((set, get) => ({
 			return {
 				success: true
 			}
-		} catch (error) {
+		} catch (error: any) {
 			set({ loading: false });
 			toast.error(error.response?.data?.message || "An error occurred");
 		}
 	},
-	login: async (email, password) => {
+	login: async (email: string, password: string) => {
 		set({ loading: true });
 
 		try {
@@ -35,7 +60,7 @@ export const useUserStore = create((set, get) => ({
 			return {
 				success: true
 			}
-		} catch (error) {
+		} catch (error: any) {
 			set({ loading: false });
 			toast.error(error.response?.data?.message || "An error occurred");
 		}
@@ -45,7 +70,7 @@ export const useUserStore = create((set, get) => ({
 		try {
 			await axios.post("/user/logout");
 			set({ user: null });
-		} catch (error) {
+		} catch (error: any) {
 			toast.error(error.response?.data?.message || "An error occurred during logout");
 		}
 	},
