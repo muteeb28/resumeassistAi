@@ -9,6 +9,13 @@ export const buildApiUrl = (path: string) => {
   return base.endsWith('/') ? `${base.slice(0, -1)}${normalizedPath}` : `${base}${normalizedPath}`;
 };
 
+const getNetworkErrorMessage = (error: unknown) => {
+  if (error instanceof TypeError && /fetch/i.test(error.message)) {
+    return "Unable to reach the API. Start the backend server and confirm VITE_API_URL or the /api proxy is correct.";
+  }
+  return "Unable to reach the API.";
+};
+
 // Debug logging for API configuration
 console.log(' API Configuration:');
 console.log('  VITE_API_URL from env:', import.meta.env.VITE_API_URL);
@@ -71,10 +78,15 @@ export async function extractResumeData(file: File): Promise<any> {
   const formData = new FormData();
   formData.append('resume', file);
 
-  const response = await fetch(buildApiUrl('extract-resume'), {
-    method: 'POST',
-    body: formData
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildApiUrl('extract-resume'), {
+      method: 'POST',
+      body: formData
+    });
+  } catch (error) {
+    throw new Error(getNetworkErrorMessage(error));
+  }
 
   const result = await response.json();
 

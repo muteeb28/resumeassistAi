@@ -6,10 +6,17 @@ import { Button } from "./button";
 import AuthModal from "./auth-modal";
 import { useUserStore } from "../stores/useUserStore";
 
-export const Navbar = ({ className }: { className?: string }) => {
+export const Navbar = ({
+  className,
+  tone = "dark",
+}: {
+  className?: string;
+  tone?: "dark" | "light";
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const { user, logout } = useUserStore();
+  const isLight = tone === "light";
 
   const navItems = [
     { name: "Job Tracker", href: "/job-tracker" },
@@ -23,7 +30,8 @@ export const Navbar = ({ className }: { className?: string }) => {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-slate-800",
+        "fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b",
+        isLight ? "bg-white/85 border-slate-200" : "bg-black/80 border-slate-800",
         className
       )}
     >
@@ -53,10 +61,18 @@ export const Navbar = ({ className }: { className?: string }) => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 + index * 0.1 }}
                 href={item.href}
-                className="text-slate-300 hover:text-white transition-colors duration-200 relative group"
+                className={cn(
+                  "transition-colors duration-200 relative group text-sm font-medium",
+                  isLight ? "text-slate-600 hover:text-slate-900" : "text-slate-300 hover:text-white"
+                )}
               >
                 {item.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300 group-hover:w-full"></span>
+                <span
+                  className={cn(
+                    "absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r transition-all duration-300 group-hover:w-full",
+                    isLight ? "from-teal-500 to-emerald-500" : "from-purple-500 to-blue-500"
+                  )}
+                ></span>
               </motion.a>
             ))}
           </div>
@@ -68,14 +84,24 @@ export const Navbar = ({ className }: { className?: string }) => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="hidden md:flex items-center space-x-4"
           >
-            <Button variant="ghost" size="sm" onClick={() => window.location.hash = "contact"}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.hash = "contact"}
+              className={cn(
+                isLight ? "text-slate-600 hover:text-slate-900 hover:bg-slate-100" : ""
+              )}
+            >
               Contact Us
             </Button>
             {
               user ? (
                 <div className="relative group">
                   <button
-                    className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white text-sm font-medium"
+                    className={cn(
+                      "flex items-center justify-center w-9 h-9 rounded-full text-white text-sm font-medium",
+                      isLight ? "bg-slate-900" : "bg-gradient-to-br from-purple-500 to-blue-500"
+                    )}
                     aria-haspopup="true"
                     aria-expanded={false}
                   >
@@ -89,12 +115,25 @@ export const Navbar = ({ className }: { className?: string }) => {
                   </div>
                 </div>
               ) : (
-                <Button variant="ghost" size="sm" onClick={() => window.location.href = "/login"}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.href = "/login"}
+                  className={cn(
+                    isLight ? "text-slate-700 hover:text-slate-900 hover:bg-slate-100" : ""
+                  )}
+                >
                   Login
                 </Button>
               )
             }
-            <Button size="sm" onClick={() => window.location.href = "/signup"}>
+            <Button
+              size="sm"
+              onClick={() => window.location.href = "/signup"}
+              className={cn(
+                isLight ? "bg-slate-900 text-white hover:bg-slate-800 shadow-none" : ""
+              )}
+            >
               Get Started
             </Button>
           </motion.div>
@@ -103,7 +142,10 @@ export const Navbar = ({ className }: { className?: string }) => {
           <div className="md:hidden">
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-slate-300 hover:text-white transition-colors duration-200 p-2"
+              className={cn(
+                "transition-colors duration-200 p-2",
+                isLight ? "text-slate-700 hover:text-slate-900" : "text-slate-300 hover:text-white"
+              )}
             >
               <svg
                 className="w-6 h-6"
@@ -141,21 +183,36 @@ export const Navbar = ({ className }: { className?: string }) => {
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="md:hidden overflow-hidden"
             >
-              <div className="px-2 pt-2 pb-3 space-y-1 bg-slate-900/50 rounded-lg mt-2">
+              <div
+                className={cn(
+                  "px-2 pt-2 pb-3 space-y-1 rounded-lg mt-2 border",
+                  isLight ? "bg-white/95 border-slate-200" : "bg-slate-900/50 border-slate-800"
+                )}
+              >
                 {navItems.map((item) => (
                   <a
                     key={item.name}
                     href={item.href}
-                    className="block px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
+                    className={cn(
+                      "block px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium",
+                      isLight
+                        ? "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                    )}
                     onClick={() => setIsOpen(false)}
                   >
                     {item.name}
                   </a>
                 ))}
-                <div className="border-t border-slate-700 pt-3 mt-3 space-y-2">
+                <div className={cn("border-t pt-3 mt-3 space-y-2", isLight ? "border-slate-200" : "border-slate-700")}>
                   <a
                     href="#contact"
-                    className="block px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
+                    className={cn(
+                      "block px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium",
+                      isLight
+                        ? "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                        : "text-slate-300 hover:text-white hover:bg-slate-800/50"
+                    )}
                     onClick={() => setIsOpen(false)}
                   >
                     Contact Us
@@ -164,7 +221,10 @@ export const Navbar = ({ className }: { className?: string }) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full"
+                      className={cn(
+                        "w-full",
+                        isLight ? "text-slate-700 hover:text-slate-900 hover:bg-slate-100" : ""
+                      )}
                       onClick={() => {
                         setIsOpen(false);
                         window.location.href = "/login";
@@ -174,7 +234,10 @@ export const Navbar = ({ className }: { className?: string }) => {
                     </Button>
                     <Button
                       size="sm"
-                      className="w-full"
+                      className={cn(
+                        "w-full",
+                        isLight ? "bg-slate-900 text-white hover:bg-slate-800" : ""
+                      )}
                       onClick={() => {
                         setIsOpen(false);
                         window.location.href = "/signup";

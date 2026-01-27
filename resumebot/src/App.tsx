@@ -7,6 +7,7 @@ import ATSOptimizePage from './components/ats-optimize-page'
 import { CreateResumeSimple } from './components/create-resume-simple'
 import { ResumeBuilder } from './components/resume-builder'
 import { LiveResumeBuilder } from './components/live-resume-builder'
+import ResumeTestPage from './components/ResumeTestPage'
 import { useEffect } from 'react'
 import { useUserStore } from './stores/useUserStore'
 import JobTrackerPage from './components/job-tracker-page'
@@ -77,6 +78,7 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/build/:templateId" element={<ResumeBuilderWrapper />} />
         <Route path="/live-builder/:templateId" element={<LiveResumeBuilder />} />
+        <Route path="/test-templates" element={<ResumeTestPage />} />
       </Routes>
     </Router>
   )

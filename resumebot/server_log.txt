@@ -1,0 +1,22 @@
+
+> resumebot@0.0.0 server
+> node server/server.js
+
+[dotenv@17.2.1] injecting env (16) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+WARN: UPSTASH_REDIS_URL not set; Redis is disabled.
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ⚙️  suppress all logs with { quiet: true }
+(node:17540) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+🚀 Resume Optimizer API v2.0 running on port 5000
+✅ Health check: http://localhost:5000/api/health
+🎯 NEW: ATS Optimizer: http://localhost:5000/api/ats-optimize
+📊 Gemini API Key: ✓ Configured
+🎨 Features: ATS Optimization, Page Preservation, Template Generation
+🚀 Connected to Neon PostgreSQL via pg Pool

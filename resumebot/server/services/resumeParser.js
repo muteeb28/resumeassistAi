@@ -20,24 +20,25 @@ function estimateResumePageCount(resumeText) {
   
   // Heuristic calculation based on multiple factors
   let estimatedPages = 1;
-  
-  // Base calculation on character count (rough estimate: 2000 chars per page for detailed content)
-  if (textLength > 2000) estimatedPages = Math.ceil(textLength / 2000);
-  
+
+  // Base calculation on character count (rough estimate: 3500 chars per page for typical content)
+  // Increased from 2000 to 3500 for more accurate long resume detection
+  if (textLength > 3500) estimatedPages = Math.ceil(textLength / 3500);
+
   // Adjust based on line count (roughly 40-50 lines per page)
   const lineBasedPages = Math.ceil(lines.length / 45);
-  
+
   // Consider job entries and bullet points (detailed content indicators)
   const contentComplexity = jobEntries.length + (bulletPoints.length / 10);
   const complexityBasedPages = Math.ceil(contentComplexity / 2);
-  
+
   // Take the maximum of these estimates for conservative page count
   estimatedPages = Math.max(estimatedPages, lineBasedPages, complexityBasedPages);
-  
-  console.log(` Page estimates: chars=${Math.ceil(textLength / 2000)}, lines=${lineBasedPages}, complexity=${complexityBasedPages}`);
-  
-  // Cap at reasonable limits
-  return Math.min(Math.max(estimatedPages, 1), 5);
+
+  console.log(` Page estimates: chars=${Math.ceil(textLength / 3500)}, lines=${lineBasedPages}, complexity=${complexityBasedPages}`);
+
+  // Cap at reasonable limits (increased to 10 for very long resumes)
+  return Math.min(Math.max(estimatedPages, 1), 10);
 }
 
 /**
@@ -241,25 +242,25 @@ function formatCondensedResume(sections) {
         linkedin: sections.personalInfo.linkedin,
         github: sections.personalInfo.github
       },
-      summary: sections.summary ? sections.summary.substring(0, 300) + '...' : null,
-      experience: sections.experience.slice(0, 3).map(exp => ({
+      summary: sections.summary, // No longer truncating summary
+      experience: sections.experience.map(exp => ({
         title: exp.title,
         company: exp.company,
         duration: exp.duration,
-        description: exp.description.slice(0, 3) // Limit to 3 bullet points
+        description: exp.description // No longer limiting bullet points
       })),
-      skills: sections.skills.slice(0, 12), // Limit skills
-      education: sections.education.slice(0, 2), // Limit education entries
-      certifications: sections.certifications.slice(0, 3) // Limit certifications
+      skills: sections.skills, // No longer limiting skills
+      education: sections.education, // No longer limiting education entries
+      certifications: sections.certifications // No longer limiting certifications
     },
     optimization: {
-      strategy: 'brevity_and_clarity',
+      strategy: 'preserve_all_content',
       prioritized_sections: ['experience', 'skills', 'education'],
       content_limits: {
-        experience_entries: 3,
-        bullets_per_role: 3,
-        skills_count: 12,
-        summary_chars: 300
+        experience_entries: 'unlimited',
+        bullets_per_role: 'unlimited',
+        skills_count: 'unlimited',
+        summary_chars: 'unlimited'
       }
     }
   };

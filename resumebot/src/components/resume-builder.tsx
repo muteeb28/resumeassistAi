@@ -145,9 +145,7 @@ export const ResumeBuilder = ({ selectedTemplate }: ResumeBuilderProps) => {
       console.log('Template ID:', selectedTemplate.id);
 
       // Initialize the resume generator service
-      const resumeGenerator = new ResumeGeneratorService(
-        import.meta.env.VITE_DEEPSEEK_API_KEY || 'your-api-key-here'
-      );
+      const resumeGenerator = new ResumeGeneratorService();
 
       // Generate the customized resume using AI
       const generatedResumeData = await resumeGenerator.generateResume(

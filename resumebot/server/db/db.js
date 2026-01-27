@@ -1,22 +1,43 @@
-import mongoose from "mongoose";
+import pg from 'pg';
+const { Pool } = pg;
+
+let pool;
 
 export const connectDB = async () => {
-  try {
-    const dbUrl = process.env.MONGODB_URI || process.env.dburl;
+    if (pool) return pool;
 
-    if (!dbUrl) {
-      console.error("❌ MongoDB connection error: 'MONGODB_URI' or 'dburl' is not defined in environment variables.");
-      // Don't exit immediately, let the app fail or try again? 
-      // Actually standard practice is to exit if DB is critical.
-      // But for development, maybe we can warn.
-      process.exit(1);
+    try {
+        pool = new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: false
+            }
+        });
+
+        const client = await pool.connect();
+        console.log('🚀 Connected to Neon PostgreSQL via pg Pool');
+
+        // Create users table if it doesn't exist
+        await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+        client.release();
+    } catch (error) {
+        console.error('❌ Neon Connection Error:', error.message);
     }
-
-    console.log('Connecting to MongoDB...');
-    await mongoose.connect(dbUrl);
-    console.log("✅ MongoDB connected successfully");
-  } catch (error) {
-    console.error("❌ MongoDB connection error:", error.message);
-    process.exit(1);
-  }
 };
+
+export const getPool = () => {
+    if (!pool) throw new Error('Database pool not initialized. Call connectDB() first.');
+    return pool;
+};
+
+export default { connectDB, getPool };

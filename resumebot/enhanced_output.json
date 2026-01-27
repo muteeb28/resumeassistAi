@@ -1,0 +1,142 @@
+{
+  "personalInfo": {
+    "name": "MOHAMMAD IQRAM",
+    "email": "mohammadiqram001@gmail.com",
+    "phone": "(907)0005552",
+    "linkedin": null,
+    "github": "github.com/MohammadIqram",
+    "location": null,
+    "website": null,
+    "links": []
+  },
+  "summary": "Highly skilled Full-Stack Software Engineer with 2+ years of experience in developing and deploying scalable web applications. Proficient in JavaScript, Node.js, React.js, and Firebase, with expertise in ERP, CRM, and E-commerce platforms, including Salesforce Commerce Cloud (Demandware). Proven ability to lead product development, design robust backend services, build intuitive frontend interfaces, and integrate third-party APIs in fast-paced startup environments.",
+  "experience": [
+    {
+      "title": "Software Engineer",
+      "company": "",
+      "duration": "OCT 2024 – PRESENT",
+      "location": "",
+      "description": [
+        "Led full-stack development of an ERP product, incorporating modules such as CRM, HRM, Sales,",
+        "Accounts, Inventory, Calendar, IAM, and Ticketing systems.",
+        "Designed and implemented robust backend services to support complex business workflows and",
+        "drive internal automation.",
+        "Developed and maintained intuitive frontend dashboards and secure admin panels for enterprise",
+        "users.",
+        "Contributed to a training and certification platform for Australian organizations, featuring course",
+        "management, membership, and corporate admin controls.",
+        "PAGE BREAK ---",
+        "Contributed significantly to architectural decisions and ensured successful end-to-end product",
+        "delivery."
+      ]
+    },
+    {
+      "title": "Software Engineer (Full-Stack)",
+      "company": "CLOUDODYSSEY (SALESFORCE PARTNER COMPANY)",
+      "duration": "JAN 2024 – SEP 2024",
+      "location": "",
+      "description": [
+        "Executed full-stack development for Salesforce Commerce Cloud (Demandware) projects.",
+        "Implemented and supported critical B2C e-commerce flows leveraging Salesforce platform tools.",
+        "Integrated diverse third-party services, including Google Analytics, Maps APIs, and customer",
+        "review systems.",
+        "Collaborated with cross-functional teams to maintain high-performance, production-grade e-",
+        "commerce websites.",
+        "Optimized website performance and implemented key improvements, enhancing user"
+      ]
+    },
+    {
+      "title": "Full-Stack Developer",
+      "company": "STEALTH STARTUP",
+      "duration": "JUL 2022 – DEC 2023",
+      "location": "",
+      "description": [
+        "Developed and deployed multiple production web applications, including GoGoMovers,",
+        "Sharwings, ResumeBotAI, and HomeAssets.",
+        "Engineered full-stack features using React.js, Node.js, and Firebase, ensuring robust functionality.",
+        "Implemented critical functionalities such as authentication, complex business logic, admin",
+        "panels, and real-time features.",
+        "Collaborated closely with founders in a fast-paced startup environment to rapidly iterate and",
+        "deliver features."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "RIMT Engineering College, Punjab",
+      "degree": "",
+      "year": "2022",
+      "location": "",
+      "score": ""
+    },
+    {
+      "institution": "Kashmir Harvard, J&K",
+      "degree": "",
+      "year": "2015",
+      "location": "",
+      "score": ""
+    }
+  ],
+  "skills": [
+    "JavaScript",
+    "Node.js",
+    "React.js",
+    "HTML",
+    "CSS",
+    "Firebase",
+    "REST",
+    "APIs",
+    "Tailwind",
+    "Bootstrap",
+    "Salesforce",
+    "Commerce",
+    "Cloud",
+    "(Demandware)",
+    "WordPress",
+    "Google",
+    "Analytics",
+    "GitHub",
+    "AWS",
+    "(Foundational",
+    "Knowledge)",
+    "ERP",
+    "Systems",
+    "CRM",
+    "Admin",
+    "Panels",
+    "Authentication",
+    "Authorization",
+    "(IAM)",
+    "Ticketing"
+  ],
+  "projects": [
+    {
+      "name": "SALESFORCE COMMERCE CLOUD WEBSITES",
+      "description": "Contributed to enterprise-scale e-commerce platforms including: https://www.titan.co.in, https://www.sonatawatches.in, https://www.fastrack.in JavaScript Salesforce Demandware Google Analytics APIs: -- PAGE BREAK ---",
+      "technologies": []
+    },
+    {
+      "name": "TOUR & TRAVEL WEBSITE",
+      "description": "Developed a production WordPress website with responsive optimization. URL: https://zammadventure.com/ WordPress",
+      "technologies": []
+    }
+  ],
+  "certifications": [
+    "AWS Cloud Practitioner",
+    "Foundation Badge AWS Solutions Architect",
+    "Foundation Badge Secured 3rd Position in Technophilia Fest"
+  ],
+  "awards": [],
+  "publications": [],
+  "domains": [],
+  "other": [],
+  "structure": {
+    "format": "text",
+    "originalPageCount": 1
+  },
+  "formatInfo": {
+    "originalPageCount": 1,
+    "isMultiPage": false,
+    "preserveOriginalDensity": true
+  }
+}

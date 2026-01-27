@@ -1,480 +1,388 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
+﻿"use client";
+
+import { useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Navbar } from "./navbar";
 import { BackgroundRippleLayout } from "./background-ripple-layout";
 import { Button } from "./button";
-import TemplatePreview from "./resume-optimizer/TemplatePreview";
-import FinalResumePreview from "./resume-optimizer/FinalResumePreview";
-import { buildApiUrl, extractResumeData, parseResumeText, polishResumeText } from "../services/resumeOptimizerApi";
-import { useUserStore } from '../stores/useUserStore'
+import { buildApiUrl, extractResumeData } from "../services/resumeOptimizerApi";
+import { generateJobSpecificResume } from "../services/resumeGenerator";
+import { TemplateSwitcher } from "./template-switcher";
+import TemplateClassic from "../templates/TemplateClassic";
+import TemplateSplit from "../templates/TemplateSplit";
+import { exportResumeDocx } from "../services/docxExport";
+import ResumeEditor from "./ResumeEditor";
+import type { ResumeGenerationResult, ResumeJSON } from "../types/resume";
+import { validateResumeJson } from "../types/resume";
 
-type Step = "input" | "templates" | "preview";
+type StepId = "resume" | "generate" | "results";
 type InputMode = "upload" | "paste";
 
-interface ResumeTemplate {
-  id: string;
-  name: string;
-  description: string;
-  style: string;
-}
-
-const resumeTemplates: ResumeTemplate[] = [
+const steps: Array<{ id: StepId; label: string; description: string }> = [
   {
-    id: "senior-modern",
-    name: "Senior Modern",
-    description: "Executive-ready layout for leadership roles.",
-    style: "senior-modern"
+    id: "resume",
+    label: "Upload Resume",
+    description: "Upload or paste your existing resume",
   },
   {
-    id: "concise-classic",
-    name: "Concise Classic",
-    description: "ATS-friendly layout for clear, focused resumes.",
-    style: "concise-classic"
-  }
+    id: "generate",
+    label: "Generate",
+    description: "Create your tailored resume",
+  },
+  {
+    id: "results",
+    label: "Results",
+    description: "Review templates and improvements",
+  },
 ];
 
-const sanitizeFilename = (name: string) => name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
-const toPixels = (value: string) => {
-  const trimmed = value.trim();
-  if (!trimmed) return 0;
-  const numeric = Number.parseFloat(trimmed);
-  if (!Number.isFinite(numeric)) return 0;
-  if (trimmed.endsWith("in")) return numeric * 96;
-  if (trimmed.endsWith("cm")) return numeric * 37.7952755906;
-  if (trimmed.endsWith("mm")) return numeric * 3.77952755906;
-  if (trimmed.endsWith("px")) return numeric;
-  return numeric;
+const lightButtonClasses = {
+  primary:
+    "bg-neutral-900 text-white border border-neutral-900 hover:bg-neutral-800 focus-visible:ring-neutral-900 focus-visible:ring-offset-white shadow-none",
+  outline:
+    "bg-white text-neutral-700 border border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 focus-visible:ring-neutral-900 focus-visible:ring-offset-white shadow-none",
 };
 
-const toStringList = (value: any): string[] => {
-  if (!value) return [];
-  if (Array.isArray(value)) {
-    return value.map((item: any) => String(item).trim()).filter(Boolean);
-  }
-  if (typeof value === "string") {
-    return value
-      .split(/[\n,]/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }
-  if (typeof value === "object") {
-    return Object.values(value).flatMap((item: any) => toStringList(item));
-  }
-  return [];
-};
+const sanitizeFilename = (name: string) =>
+  name.replace(/[^a-z0-9]/gi, "_").toLowerCase();
 
-const toArray = (value: any) => (Array.isArray(value) ? value.filter(Boolean) : []);
-
-const countBullets = (entries: any[]) => {
-  if (!Array.isArray(entries)) return 0;
-  return entries.reduce((total, entry) => {
-    if (!entry) return total;
-    const description = entry.description ?? entry.points ?? entry.bullets ?? entry.responsibilities ?? [];
-    if (Array.isArray(description)) {
-      return total + description.filter((item: any) => String(item).trim()).length;
-    }
-    if (typeof description === "string") {
-      return total + description.split(/\n|\u2022/).map((item) => item.trim()).filter(Boolean).length;
-    }
-    return total;
-  }, 0);
-};
-
-const chooseText = (original: string | undefined, polished: string | undefined, ratio = 0.7) => {
-  const originalText = typeof original === "string" ? original.trim() : "";
-  const polishedText = typeof polished === "string" ? polished.trim() : "";
-  if (!originalText) return polishedText || "";
-  if (!polishedText) return originalText;
-  return polishedText.length >= Math.ceil(originalText.length * ratio) ? polishedText : originalText;
-};
-
-const chooseList = (original: any, polished: any, ratio = 0.7) => {
-  const originalList = toArray(original);
-  const polishedList = toArray(polished);
-  if (originalList.length === 0) return polishedList;
-  if (polishedList.length === 0) return originalList;
-  return polishedList.length >= Math.ceil(originalList.length * ratio) ? polishedList : originalList;
-};
-
-const chooseExperience = (original: any, polished: any) => {
-  const originalList = toArray(original);
-  const polishedList = toArray(polished);
-  if (originalList.length === 0) return polishedList;
-  if (polishedList.length === 0) return originalList;
-
-  const originalBullets = countBullets(originalList);
-  const polishedBullets = countBullets(polishedList);
-  const entriesOk = polishedList.length >= Math.ceil(originalList.length * 0.7);
-  const bulletsOk = originalBullets === 0 || polishedBullets >= Math.ceil(originalBullets * 0.7);
-
-  return entriesOk && bulletsOk ? polishedList : originalList;
-};
-
-const mergeParsedResume = (original: any, polished: any) => {
-  if (!polished || typeof polished !== "object") return original;
-  const merged = { ...original };
-  const originalContact = original?.contact || {};
-  const polishedContact = polished?.contact || {};
-
-  merged.name = original?.name || polished?.name || "";
-  merged.contact = { ...polishedContact, ...originalContact };
-  merged.summary = chooseText(original?.summary, polished?.summary);
-  merged.skills = chooseList(original?.skills, polished?.skills);
-  merged.experience = chooseExperience(original?.experience, polished?.experience);
-  merged.education = chooseList(original?.education, polished?.education, 0.6);
-  merged.projects = chooseList(original?.projects, polished?.projects, 0.6);
-  merged.certifications = chooseList(original?.certifications, polished?.certifications, 0.6);
-  merged.structure = original?.structure || polished?.structure;
-  merged.formatInfo = original?.formatInfo || polished?.formatInfo;
-
-  return merged;
-};
-
-const buildEditableTextFromParsed = (data: any): string => {
+// Simple text extraction for initial upload display only
+// This runs ONCE at import time, not in the edit loop
+const extractTextFromParsed = (data: any): string => {
   if (!data || typeof data !== "object") return "";
+
+  // If there's raw text available, use it
+  if (data.rawText && typeof data.rawText === "string") {
+    return data.rawText;
+  }
+
   const content = data.fullContent || data.layout || data;
-  const contactSource = content.contact || content.personalInfo || content.contactInfo || {};
   const lines: string[] = [];
 
-  const name = content.name || contactSource.name;
-  if (name) {
-    lines.push(String(name));
-  }
+  // Name
+  const name = content.name || content.personalInfo?.name || content.contact?.name;
+  if (name) lines.push(String(name));
 
-  const contactParts: string[] = [];
-  if (contactSource.email) contactParts.push(String(contactSource.email));
-  if (contactSource.phone) contactParts.push(String(contactSource.phone));
-  if (contactSource.location) contactParts.push(String(contactSource.location));
-  if (contactSource.linkedin) contactParts.push(`LinkedIn: ${contactSource.linkedin}`);
-  if (contactSource.github) contactParts.push(`GitHub: ${contactSource.github}`);
-  const website = contactSource.website || contactSource.portfolio;
-  if (website) contactParts.push(`Portfolio: ${website}`);
-  if (Array.isArray(contactSource.links)) {
-    contactSource.links.forEach((link: any) => {
-      if (!link) return;
-      if (typeof link === "string") {
-        contactParts.push(link);
-        return;
-      }
-      if (typeof link === "object") {
-        const label = typeof link.label === "string"
-          ? link.label
-          : typeof link.type === "string"
-            ? link.type
-            : "";
-        const url = link.url || link.href || link.link;
-        if (typeof url === "string" && label) {
-          contactParts.push(`${label}: ${url}`);
-          return;
-        }
-        if (typeof url === "string") {
-          contactParts.push(url);
-          return;
-        }
-        if (label) {
-          contactParts.push(label);
-        }
-      }
-    });
-  }
-  if (contactParts.length) {
-    lines.push(contactParts.join(" | "));
-  }
+  // Contact info - include ALL links
+  const contact = content.personalInfo || content.contact || content.contactInfo || {};
+  const contactParts = [contact.email, contact.phone, contact.location].filter(Boolean);
+  if (contactParts.length) lines.push(contactParts.join(" | "));
 
-  const summary = content.summary || content.professionalSummary || content.profile || content.objective;
-  if (summary) {
-    lines.push("", "PROFESSIONAL SUMMARY", String(summary));
-  }
+  // Add social links on separate lines so parser can detect them
+  if (contact.github) lines.push(`GitHub: ${contact.github}`);
+  if (contact.linkedin) lines.push(`LinkedIn: ${contact.linkedin}`);
+  if (contact.twitter) lines.push(`Twitter: ${contact.twitter}`);
 
-  const skills = toStringList(content.skills);
-  const fallbackSkills = skills.length > 0 ? skills : toStringList(content.coreSkills || content.skillset || content.skillSet);
-  if (fallbackSkills.length > 0) {
-    lines.push("", "SKILLS", fallbackSkills.join(", "));
-  }
+  // Summary
+  const summary = content.summary || content.professionalSummary || content.profile;
+  if (summary) lines.push("", "PROFESSIONAL SUMMARY", String(summary));
 
+  // Skills
+  const skills = Array.isArray(content.skills) ? content.skills : [];
+  if (skills.length) lines.push("", "SKILLS", skills.join(", "));
+
+  // Experience
   const experience = Array.isArray(content.experience) ? content.experience : [];
-  if (experience.length > 0) {
+  if (experience.length) {
     lines.push("", "EXPERIENCE");
     experience.forEach((exp: any) => {
-      if (!exp) return;
-      const headerParts = [
-        exp.title || exp.position || exp.role,
-        exp.company || exp.employer || exp.organization,
-        exp.dates || exp.duration || exp.date
-      ].filter(Boolean);
-      if (headerParts.length > 0) {
-        lines.push(headerParts.join(" | "));
+      const title = exp.title || exp.role || exp.position || "";
+      const company = exp.company || exp.organization || "";
+      const dates = exp.dates || exp.duration || "";
+      if (title || company) lines.push(`${title} ${company} (${dates})`.trim());
+      const bullets = exp.description || exp.bullets || exp.responsibilities || [];
+      if (Array.isArray(bullets)) {
+        bullets.forEach((b: any) => lines.push(`- ${String(b)}`));
       }
-      const description = exp.description ?? exp.points ?? exp.bullets ?? exp.responsibilities ?? [];
-      const bullets = Array.isArray(description)
-        ? description
-        : typeof description === "string"
-          ? description.split("\n")
-          : [];
-      bullets
-        .map((item: any) => String(item).trim())
-        .filter(Boolean)
-        .forEach((item: string) => lines.push(`- ${item}`));
-      lines.push("");
     });
   }
 
+  // Projects - MUST be included with ALL fields
+  const projects = Array.isArray(content.projects) ? content.projects : [];
+  if (projects.length) {
+    lines.push("", "PROJECTS");
+    projects.forEach((proj: any) => {
+      const name = proj.name || proj.title || "";
+      const description = proj.description || proj.summary || "";
+      const link = proj.link || proj.url || "";
+
+      if (name) {
+        lines.push(name);
+        if (description) lines.push(description);
+        const bullets = proj.bullets || proj.points || [];
+        if (Array.isArray(bullets)) {
+          bullets.forEach((b: any) => lines.push(`- ${String(b)}`));
+        }
+        // Add link BEFORE tech so parser can detect it
+        if (link) {
+          lines.push(`Link: ${link}`);
+        }
+        const tech = proj.tech || proj.technologies || [];
+        if (Array.isArray(tech) && tech.length) {
+          lines.push(`Tech: ${tech.join(", ")}`);
+        }
+      }
+    });
+  }
+
+  // Education - handle both string and object formats
   const education = Array.isArray(content.education) ? content.education : [];
-  if (education.length > 0) {
+  if (education.length) {
     lines.push("", "EDUCATION");
     education.forEach((edu: any) => {
-      if (!edu) return;
-      const parts = [
-        edu.degree,
-        edu.institution || edu.university || edu.school,
-        edu.year || edu.dates || edu.graduation
-      ].filter(Boolean);
-      if (parts.length > 0) {
-        lines.push(parts.join(" | "));
-      }
-    });
-  }
-
-  const projects = Array.isArray(content.projects) ? content.projects : [];
-  if (projects.length > 0) {
-    lines.push("", "PROJECTS");
-    projects.forEach((project: any) => {
-      if (!project) return;
-      if (typeof project === "string") {
-        lines.push(project);
+      // Handle string format (from backend parser)
+      if (typeof edu === 'string') {
+        lines.push(edu);
         return;
       }
-      const title = project.name || project.title;
-      const description = project.description || project.summary;
-      if (title && description) {
-        lines.push(`${title}: ${description}`);
-      } else if (title) {
-        lines.push(title);
-      } else if (description) {
-        lines.push(description);
-      }
-      const technologies = toStringList(project.technologies || project.techStack || project.stack);
-      if (technologies.length > 0) {
-        lines.push(`Tech: ${technologies.join(", ")}`);
+
+      // Handle object format
+      const degree = edu.degree || "";
+      const school = edu.school || edu.institution || edu.university || "";
+      const dates = edu.dates || edu.year || edu.graduation || "";
+
+      // Format as "Degree - School (Dates)" for better parsing
+      if (school && dates) {
+        const line = degree
+          ? `${degree} - ${school} (${dates})`
+          : `${school} (${dates})`;
+        lines.push(line);
+      } else if (school) {
+        const line = degree ? `${degree} - ${school}` : school;
+        lines.push(line);
       }
     });
   }
 
-  const certifications = Array.isArray(content.certifications)
-    ? content.certifications
-    : toStringList(content.certifications);
-  if (certifications.length > 0) {
+  // Certifications
+  const certifications = Array.isArray(content.certifications) ? content.certifications : [];
+  if (certifications.length) {
     lines.push("", "CERTIFICATIONS");
     certifications.forEach((cert: any) => {
-      if (!cert) return;
-      const label = typeof cert === "string" ? cert : cert.name || cert.title || String(cert);
-      if (label) {
-        lines.push(`- ${label}`);
+      if (typeof cert === "string") {
+        lines.push(`- ${cert}`);
+      } else {
+        const name = cert.name || cert.title || "";
+        const issuer = cert.issuer || "";
+        const date = cert.date || "";
+        const parts = [name, issuer, date].filter(Boolean);
+        if (parts.length) lines.push(`- ${parts.join(" - ")}`);
       }
     });
   }
 
-  return lines
-    .map((line) => line.trimEnd())
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  // Community / Activities
+  const community = Array.isArray(content.community) ? content.community : [];
+  if (community.length) {
+    lines.push("", "COMMUNITY & ACTIVITIES");
+    community.forEach((item: any) => {
+      const role = item.role || item.title || "";
+      const org = item.organization || item.company || "";
+      if (role || org) {
+        lines.push(`- ${role}${org ? `: ${org}` : ""}`);
+      }
+    });
+  }
+
+  return lines.join("\n").trim();
 };
 
 export const CreateResumeSimple = () => {
-  const [step, setStep] = useState<Step>("input");
+  const [step, setStep] = useState<StepId>("resume");
   const [inputMode, setInputMode] = useState<InputMode>("upload");
-  const [isParsing, setIsParsing] = useState(false);
-  const [parseError, setParseError] = useState<string | null>(null);
   const [resumeText, setResumeText] = useState("");
-  const [parsedResume, setParsedResume] = useState<any | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<ResumeTemplate | null>(null);
+  const [parsedResumeJson, setParsedResumeJson] = useState<any>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [generationWarning, setGenerationWarning] = useState<string | null>(null);
+  const [generationResult, setGenerationResult] = useState<ResumeGenerationResult | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("template-classic");
   const [pdfGenerating, setPdfGenerating] = useState(false);
-  const [pdfGenerationType, setPdfGenerationType] = useState("");
-  const [previewScale, setPreviewScale] = useState(1);
-  const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
-  const resumeContentRef = useRef<HTMLDivElement | null>(null);
-  const previewContainerRef = useRef<HTMLDivElement | null>(null);
+  const [docxGenerating, setDocxGenerating] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
 
-  const { } = useUserStore();
+  const resumePreviewRef = useRef<HTMLDivElement | null>(null);
 
-  const resetFlow = () => {
-    setStep("input");
-    setInputMode("upload");
-    setIsParsing(false);
-    setParseError(null);
-    setResumeText("");
-    setParsedResume(null);
-    setSelectedTemplate(null);
-    setUploadedFileName(null);
-  };
+  const templates = useMemo(
+    () => [
+      {
+        id: "template-classic",
+        label: "Classic",
+        description: "Single-column ATS layout",
+        Component: TemplateClassic,
+      },
+      {
+        id: "template-split",
+        label: "Split",
+        description: "Two-column layout",
+        Component: TemplateSplit,
+      },
+    ],
+    []
+  );
+
+  const selectedTemplate = templates.find((template) => template.id === selectedTemplateId) || templates[0];
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (file.type !== "application/pdf") {
-      setParseError("Please upload a PDF resume.");
+      setResumeError("Please upload a PDF resume.");
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setParseError("File size exceeds 10MB limit.");
+      setResumeError("File size exceeds 10MB limit.");
       return;
     }
 
-    setIsParsing(true);
-    setParseError(null);
+    setIsExtracting(true);
+    setResumeError(null);
     setUploadedFileName(file.name);
 
     try {
       const parsed = await extractResumeData(file);
-      setParsedResume(parsed);
-      setStep("templates");
+      console.log('[DEBUG] Parsed data from PDF:', JSON.stringify(parsed, null, 2));
+
+      // Store the parsed JSON directly
+      setParsedResumeJson(parsed.resumeJson || null);
+
+      const text = extractTextFromParsed(parsed);
+      setResumeText(text);
+      if (!text.trim()) {
+        setResumeError("We could not extract text from this PDF. Please paste your resume text.");
+      }
     } catch (error: any) {
-      setParseError(error?.message || "Failed to parse resume.");
+      setResumeError(error?.message || "Failed to extract resume text.");
     } finally {
-      setIsParsing(false);
+      setIsExtracting(false);
       event.target.value = "";
     }
   };
 
-  const handlePasteSubmit = async () => {
-    const trimmed = resumeText.trim();
-    if (!trimmed) return;
+  const handleContinue = async () => {
+    const trimmedResume = resumeText.trim();
+    if (!trimmedResume) {
+      if (uploadedFileName) {
+        setResumeError("We could not extract text from your PDF. Please paste your resume text.");
+      } else {
+        setResumeError("Upload a PDF or paste your resume text to continue.");
+      }
+      return;
+    }
+    setResumeError(null);
+    await handleGenerate();
+  };
 
-    setIsParsing(true);
-    setParseError(null);
+  const handleGenerate = async () => {
+    setGenerationError(null);
+    setGenerationWarning(null);
+    setIsGenerating(true);
+    setStep("generate");
 
     try {
-      const originalParsed = await parseResumeText(trimmed);
-      let mergedParsed = originalParsed;
+      let result: ResumeGenerationResult;
 
-      try {
-        const polishedText = await polishResumeText(trimmed);
-        const polishedParsed = await parseResumeText(polishedText);
-        mergedParsed = mergeParsedResume(originalParsed, polishedParsed);
-        setResumeText(buildEditableTextFromParsed(mergedParsed));
-      } catch (polishError) {
-        console.warn("Resume polish failed, using original text:", polishError);
-        setResumeText(buildEditableTextFromParsed(originalParsed));
+      // If we have parsed JSON, use it directly. Otherwise fall back to text parsing.
+      if (parsedResumeJson) {
+        console.log('[DEBUG] Using pre-parsed resumeJson:', JSON.stringify(parsedResumeJson, null, 2));
+
+        // Use the already-parsed data directly - no re-parsing needed
+        result = {
+          resume: parsedResumeJson,
+          report: {
+            matchEstimate: 100,
+            keywordsAdded: [],
+            keywordsMissing: [],
+            changes: []
+          },
+          meta: { source: 'direct-parse', reason: 'Using pre-parsed data from PDF extraction' }
+        };
+
+        console.log('[DEBUG] Direct Resume Result:', JSON.stringify(parsedResumeJson, null, 2));
+      } else {
+        // Fallback: Clean resume text before sending to AI
+        const cleanedResumeText = resumeText
+          .split('\n')
+          .reduce((acc: string[], line: string) => {
+            const trimmed = line.trim();
+            // Skip duplicate section headers (if same header appears twice in a row with only blank lines between)
+            if (trimmed && /^(PROFESSIONAL SUMMARY|SKILLS|EXPERIENCE|EDUCATION|PROJECTS|COMMUNITY)$/i.test(trimmed)) {
+              // Check if we already added this header recently (within last 3 lines)
+              const recentLines = acc.slice(-3);
+              if (recentLines.some(l => l.trim() === trimmed)) {
+                return acc; // Skip duplicate header
+              }
+            }
+            acc.push(line);
+            return acc;
+          }, [])
+          .join('\n');
+
+        console.log('[DEBUG] Cleaned resume text:', cleanedResumeText);
+
+        result = await generateJobSpecificResume({
+          resumeText: cleanedResumeText,
+          jobDescription: "",
+        });
+
+        console.log('[DEBUG] AI Resume Result:', JSON.stringify(result.resume, null, 2));
       }
 
-      setParsedResume(mergedParsed);
-      setStep("templates");
+      // Validate at the boundary - fail loudly if invalid
+      const validation = validateResumeJson(result.resume);
+      if (!validation.valid) {
+        console.error('[VALIDATION FAILED]', validation.errors);
+        throw new Error(`Invalid resume data: ${validation.errors.join(", ")}`);
+      }
+
+      setGenerationResult(result);
+      const flags = result.report?.flags || [];
+      if (flags.includes("experience_unparsed")) {
+        setGenerationWarning(
+          "We could not fully structure your experience section."
+        );
+      }
+      setSelectedTemplateId("template-classic");
+      setStep("results");
     } catch (error: any) {
-      setParseError(error?.message || "Failed to parse resume.");
+      setGenerationError(error?.message || "Failed to generate resume.");
+      setStep("resume");
     } finally {
-      setIsParsing(false);
-    }
-  };
-
-  const handleTemplateSelect = (template: ResumeTemplate) => {
-    setSelectedTemplate(template);
-    setStep("preview");
-  };
-
-  const buildTemplatePayload = (template: ResumeTemplate, data: any) => ({
-    ...data,
-    style: template.style,
-    templateName: template.name
-  });
-
-  const previewData = selectedTemplate && parsedResume
-    ? buildTemplatePayload(selectedTemplate, parsedResume)
-    : null;
-
-  useEffect(() => {
-    if (step !== "preview" || !previewData) return;
-    const element = resumeContentRef.current;
-    if (!element) return;
-
-    const measure = () => {
-      const contentHeight = element.scrollHeight;
-      const contentWidth = element.scrollWidth;
-      if (contentHeight <= 0 || contentWidth <= 0) return;
-
-      const containerWidth = previewContainerRef.current?.clientWidth || contentWidth;
-      const widthScale = containerWidth > 0 ? Math.min(1, containerWidth / contentWidth) : 1;
-      const nextScale = Number(widthScale.toFixed(3));
-
-      setPreviewScale(nextScale);
-      setPreviewSize({
-        width: contentWidth * nextScale,
-        height: contentHeight * nextScale
-      });
-    };
-
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    window.addEventListener("resize", measure);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [step, previewData]);
-
-  const handleEditContent = () => {
-    setStep("input");
-    setInputMode("paste");
-    setParseError(null);
-    setIsParsing(false);
-    setSelectedTemplate(null);
-    if (!resumeText.trim()) {
-      setResumeText(buildEditableTextFromParsed(parsedResume));
+      setIsGenerating(false);
     }
   };
 
   const handleDownloadPdf = async () => {
-    if (!previewData || pdfGenerating) return;
-    const element = document.getElementById("resume-content");
-    if (!element) return;
+    if (!resumePreviewRef.current || !generationResult || pdfGenerating) return;
 
     try {
       setPdfGenerating(true);
-      setPdfGenerationType("Generating PDF...");
-
-      const styles = window.getComputedStyle(element);
-      const pageHeightValue = styles.getPropertyValue("--resume-page-height");
-      const pageHeight = toPixels(pageHeightValue) || 1056;
-      const contentHeight = element.scrollHeight;
-      const estimatedPages = pageHeight > 0 ? Math.ceil(contentHeight / pageHeight) : 1;
-      const resolvedTargetPageCount = Math.max(1, estimatedPages);
+      const element = resumePreviewRef.current;
 
       let stylesheets = "";
       const styleElements = Array.from(document.querySelectorAll("style"));
-      styleElements.forEach((style) => { stylesheets += style.textContent + "\n"; });
+      styleElements.forEach((style) => {
+        stylesheets += style.textContent + "\n";
+      });
 
-      const linkElements = Array.from(document.querySelectorAll("link[rel=\"stylesheet\"]"));
+      const linkElements = Array.from(
+        document.querySelectorAll("link[rel=\"stylesheet\"]")
+      );
       for (const link of linkElements) {
-        try {
-          const href = (link as HTMLLinkElement).href;
-          if (href) stylesheets += `@import url('${href}');\n`;
-        } catch (e) { }
+        const href = (link as HTMLLinkElement).href;
+        if (href) stylesheets += `@import url('${href}');\n`;
       }
-
-      const printOptimizations = `
-        @page { size: Letter; margin: 0; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        body { margin: 0; padding: 0; }
-        .resume-content { page-break-inside: auto !important; }
-        .resume-page {
-          width: var(--resume-page-width, 8.5in);
-          min-height: var(--resume-page-height, 11in);
-          padding: var(--resume-page-padding, 0.5in);
-          box-sizing: border-box;
-          background: #ffffff;
-        }
-      `;
 
       const html = `
         <!DOCTYPE html>
         <html>
-          <head><meta charset="UTF-8"><style>${stylesheets}${printOptimizations}</style></head>
+          <head><meta charset=\"UTF-8\"><style>${stylesheets}</style></head>
           <body>${element.outerHTML}</body>
         </html>
       `;
@@ -489,213 +397,447 @@ export const CreateResumeSimple = () => {
             printBackground: true,
             preferCSSPageSize: true,
             margin: "0in",
-            fitToPage: true,
-            targetPageCount: resolvedTargetPageCount
-          }
-        })
+          },
+        }),
       });
 
-      if (!response.ok) throw new Error("PDF generation failed");
+      if (!response.ok) {
+        throw new Error("PDF generation failed");
+      }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      const templateName = selectedTemplate?.name || "resume";
-      a.href = url;
-      a.download = `${sanitizeFilename(templateName)}-${new Date().getTime()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
+      const link = document.createElement("a");
+      const name = generationResult.resume.basics.name || "resume";
+      link.href = url;
+      link.download = `${sanitizeFilename(name)}-job-resume.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
     } catch (error) {
       console.error("PDF generation error:", error);
-      alert("Failed to generate PDF.");
+      setGenerationError("Failed to generate PDF.");
     } finally {
       setPdfGenerating(false);
-      setPdfGenerationType("");
     }
   };
 
+  const handleDownloadDocx = async () => {
+    if (!generationResult || docxGenerating) return;
+    try {
+      setDocxGenerating(true);
+      const name = generationResult.resume.basics.name || "resume";
+      await exportResumeDocx(
+        generationResult.resume,
+        `${sanitizeFilename(name)}-job-resume.docx`,
+        selectedTemplateId === "template-split" ? "split" : "classic"
+      );
+    } catch (error) {
+      console.error("DOCX generation error:", error);
+      setGenerationError("Failed to generate DOCX.");
+    } finally {
+      setDocxGenerating(false);
+    }
+  };
 
+  // Handle direct JSON edits - no parsing, just update state
+  const handleResumeChange = (updatedResume: ResumeJSON) => {
+    setGenerationResult((prev) =>
+      prev ? { ...prev, resume: updatedResume } : prev
+    );
+  };
 
-  return (
-    <BackgroundRippleLayout tone="dark" contentClassName="resume-optimizer pt-16">
-      <Navbar />
-      <div className="pt-16 pb-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          {step === "input" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center"
-            >
-              <h2 className="text-4xl font-bold text-white mb-4">
-                Import or Paste Your Resume
-              </h2>
-              <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-10">
-                Upload a PDF or paste your resume content. We will fill the template
-                with your actual data.
+  const renderStepContent = () => {
+    if (step === "resume") {
+      return (
+        <div className="grid gap-10 lg:grid-cols-[1.1fr_1fr]">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold text-neutral-900">
+                Create a New Resume
+              </h1>
+              <p className="text-neutral-500 text-lg">
+                Upload your existing resume and generate a clean, ATS-ready resume
+                in minutes.
               </p>
+            </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap gap-3">
                 <Button
                   variant={inputMode === "upload" ? "default" : "outline"}
                   onClick={() => setInputMode("upload")}
+                  className={
+                    inputMode === "upload"
+                      ? lightButtonClasses.primary
+                      : lightButtonClasses.outline
+                  }
                 >
-                  Import PDF
+                  Upload PDF
                 </Button>
                 <Button
                   variant={inputMode === "paste" ? "default" : "outline"}
                   onClick={() => setInputMode("paste")}
+                  className={
+                    inputMode === "paste"
+                      ? lightButtonClasses.primary
+                      : lightButtonClasses.outline
+                  }
                 >
-                  Paste Content
+                  Paste Resume Text
                 </Button>
               </div>
 
-              {inputMode === "upload" ? (
-                <div className="max-w-xl mx-auto">
-                  <label className="group relative flex flex-col items-center justify-center w-full h-72 border-2 border-dashed border-white/10 rounded-3xl cursor-pointer bg-white/[0.02] hover:bg-white/[0.05] transition-all">
-                    <div className="text-slate-300 text-lg font-semibold mb-2">
+              {inputMode === "upload" && (
+                <div className="mt-6">
+                  <label className="group relative flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-neutral-200 rounded-2xl cursor-pointer bg-neutral-50 hover:bg-neutral-100 transition-all">
+                    <div className="text-neutral-700 text-sm font-semibold mb-2">
                       Drop your PDF resume here
                     </div>
-                    <p className="text-slate-500 text-sm">PDF up to 10MB</p>
+                    <p className="text-neutral-500 text-xs">PDF up to 10MB</p>
                     <input
                       type="file"
                       className="hidden"
                       accept=".pdf"
                       onChange={handleFileUpload}
-                      disabled={isParsing}
+                      disabled={isExtracting}
                     />
                   </label>
                   {uploadedFileName && (
-                    <div className="mt-4 text-slate-400 text-sm">
+                    <div className="mt-3 text-neutral-500 text-xs">
                       Selected: {uploadedFileName}
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="max-w-3xl mx-auto space-y-4">
-                  <textarea
-                    value={resumeText}
-                    onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Paste your resume content here..."
-                    className="w-full h-64 px-4 py-3 bg-slate-800/50 border border-slate-600 rounded-2xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-white/10 resize-none"
-                  />
-                  <Button
-                    onClick={handlePasteSubmit}
-                    disabled={!resumeText.trim() || isParsing}
-                    size="lg"
-                  >
-                    {isParsing ? (inputMode === "paste" ? "Polishing..." : "Parsing...") : "Continue"}
-                  </Button>
-                </div>
               )}
 
-              {isParsing && (
-                <div className="mt-6 text-slate-400 text-sm">
-                  {inputMode === "paste" ? "Polishing your resume..." : "Parsing your resume..."}
-                </div>
-              )}
-
-              {parseError && (
-                <div className="mt-6 max-w-xl mx-auto bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-red-400">
-                  {parseError}
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {step === "templates" && parsedResume && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="text-center mb-12">
-                <h2 className="text-4xl font-bold text-white mb-4">
-                  Choose Your Resume Template
-                </h2>
-                <p className="text-slate-400 text-lg">
-                  Preview your content in each layout before selecting.
-                </p>
+              <div className="mt-6">
+                <label className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  Resume Text (Optional if PDF is uploaded)
+                </label>
+                <textarea
+                  value={resumeText}
+                  onChange={(event) => {
+                    setResumeText(event.target.value);
+                    // Clear parsed JSON when user manually edits text
+                    if (parsedResumeJson) {
+                      setParsedResumeJson(null);
+                    }
+                  }}
+                  placeholder="Paste your resume text here (optional if PDF is uploaded)..."
+                  className="mt-2 h-56 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+                />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-8">
-                {resumeTemplates.map((template, index) => (
-                  <motion.button
-                    key={template.id}
-                    type="button"
-                    onClick={() => handleTemplateSelect(template)}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="text-left bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 hover:border-white/30 transition-all"
-                  >
-                    <div className="mb-6">
-                      <TemplatePreview
-                        template={{
-                          content: buildTemplatePayload(template, parsedResume),
-                          style: template.style,
-                          name: template.name
-                        }}
-                      />
-                    </div>
-                    <h3 className="text-2xl font-bold text-white mb-2">{template.name}</h3>
-                    <p className="text-slate-400">{template.description}</p>
-                  </motion.button>
-                ))}
-              </div>
+              {isExtracting && (
+                <div className="mt-3 text-sm text-neutral-500">
+                  Extracting resume content...
+                </div>
+              )}
 
-              <div className="flex justify-center mt-10">
-                <Button variant="outline" onClick={resetFlow}>
-                  Start Over
+              {resumeError && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                  {resumeError}
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap justify-between gap-3">
+                <div className="text-xs text-neutral-400">
+                  We only use your existing information. No new facts are added.
+                </div>
+                <Button
+                  onClick={handleContinue}
+                  className={lightButtonClasses.primary}
+                  disabled={isExtracting || isGenerating}
+                >
+                  Continue
                 </Button>
               </div>
-            </motion.div>
-          )}
+            </div>
+          </div>
 
-          {step === "preview" && previewData && selectedTemplate && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+          <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-6">
+            <h3 className="text-lg font-semibold text-neutral-900">
+              How it works
+            </h3>
+            <ul className="mt-4 space-y-3 text-sm text-neutral-600">
+              <li>Upload your existing resume or paste the text.</li>
+              <li>We format your resume into ATS-ready templates.</li>
+              <li>Download ATS-ready templates instantly.</li>
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    if (step === "generate") {
+      return (
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+            className="h-10 w-10 rounded-full border-4 border-neutral-200 border-t-neutral-900"
+          />
+          <h2 className="mt-6 text-2xl font-semibold text-neutral-900">
+            Generating your resume
+          </h2>
+          <p className="mt-3 text-neutral-500">
+            We are formatting and refining your resume. This usually takes less
+            than a minute.
+          </p>
+        </div>
+      );
+    }
+
+    if (step === "results" && generationResult) {
+      const resume = generationResult.resume as ResumeJSON;
+      const report = generationResult.report || {
+        matchEstimate: 0,
+        keywordsAdded: [],
+        keywordsMissing: [],
+        changes: [],
+      };
+      const needsExperienceReview = !resume.experience || resume.experience.length === 0;
+      const needsEducationReview = !resume.education || resume.education.length === 0;
+      const needsProjectsReview = !resume.projects || resume.projects.length === 0;
+      const needsCertReview = !resume.certifications || resume.certifications.length === 0;
+      const needsSkillsReview = !resume.skills || resume.skills.length === 0;
+      const SelectedTemplate = selectedTemplate.Component;
+
+      return (
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-4xl font-bold text-white mb-2">
-                    Final Preview
+                  <h2 className="text-2xl font-semibold text-neutral-900">
+                    Your Resume
                   </h2>
-                  <p className="text-slate-400">
-                    {selectedTemplate.name} template with your content.
+                  <p className="text-neutral-500 text-sm">
+                    Switch templates instantly and download in PDF or DOCX.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button variant="outline" onClick={() => setStep("templates")}>
-                    Change Template
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={handleDownloadPdf}
+                    className={lightButtonClasses.primary}
+                    disabled={pdfGenerating}
+                  >
+                    {pdfGenerating ? "Generating PDF..." : "Download PDF"}
                   </Button>
-                  <Button variant="outline" onClick={handleEditContent}>
-                    Edit Content
-                  </Button>
-                  <Button onClick={handleDownloadPdf} disabled={pdfGenerating}>
-                    {pdfGenerating ? (pdfGenerationType || "Generating...") : "Download PDF"}
-                  </Button>
-                  <Button variant="outline" onClick={resetFlow}>
-                    Start Over
+                  <Button
+                    onClick={handleDownloadDocx}
+                    className={lightButtonClasses.outline}
+                    disabled={docxGenerating}
+                  >
+                    {docxGenerating ? "Generating DOCX..." : "Download DOCX"}
                   </Button>
                 </div>
               </div>
 
-              <div ref={previewContainerRef} className="bg-white rounded-[2rem] shadow-[0_40px_100px_rgba(0,0,0,0.4)] overflow-hidden border-[10px] border-slate-950">
-                <div className="flex justify-center">
-                  <div style={previewSize ? { width: previewSize.width, height: previewSize.height } : undefined}>
-                    <div style={{ transform: `scale(${previewScale})`, transformOrigin: "top left" }}>
-                      <div id="resume-content" ref={resumeContentRef} className="resume-content">
-                        <FinalResumePreview data={previewData} mode="multi" />
-                      </div>
-                    </div>
+              {generationWarning && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                  {generationWarning}
+                </div>
+              )}
+
+              {needsExperienceReview && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                  Experience section could not be fully structured. Consider uploading a cleaner resume.
+                </div>
+              )}
+
+              {(needsSkillsReview || needsEducationReview || needsProjectsReview || needsCertReview) && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+                  Some sections may need review. Check the preview for accuracy.
+                </div>
+              )}
+
+              {generationError && (
+                <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+                  {generationError}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center justify-between">
+                <TemplateSwitcher
+                  templates={templates.map(({ id, label, description }) => ({
+                    id,
+                    label,
+                    description,
+                  }))}
+                  selectedId={selectedTemplateId}
+                  onSelect={setSelectedTemplateId}
+                />
+                <Button
+                  onClick={() => setShowEditor(!showEditor)}
+                  className={lightButtonClasses.outline}
+                >
+                  {showEditor ? "Hide Editor" : "Edit Resume"}
+                </Button>
+              </div>
+
+              {showEditor && (
+                <div className="mt-6 max-h-[600px] overflow-y-auto rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+                  <ResumeEditor resume={resume} onChange={handleResumeChange} />
+                </div>
+              )}
+
+              <div className="mt-6 rounded-3xl border border-neutral-200 bg-neutral-50 p-4">
+                <div ref={resumePreviewRef} className="resume-content">
+                  <SelectedTemplate resume={resume} />
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="space-y-6">
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-neutral-900">
+                Match Estimate
+              </h3>
+              <p className="mt-2 text-sm text-neutral-500">
+                This is an estimate, not an official ATS score.
+              </p>
+              <div className="mt-4 flex items-center gap-3">
+                <div className="text-3xl font-semibold text-neutral-900">
+                  {report.matchEstimate}%
+                </div>
+                <div className="h-2 flex-1 rounded-full bg-neutral-100">
+                  <div
+                    className="h-2 rounded-full bg-neutral-900"
+                    style={{ width: `${Math.min(100, report.matchEstimate)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-neutral-900">
+                Keyword Alignment
+              </h3>
+              <div className="mt-4 space-y-4 text-sm">
+                <div>
+                  <p className="font-semibold text-neutral-700">Keywords added</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {report.keywordsAdded.length ? (
+                      report.keywordsAdded.map((keyword) => (
+                        <span
+                          key={keyword}
+                          className="rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700"
+                        >
+                          {keyword}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-neutral-400">None detected.</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <p className="font-semibold text-neutral-700">
+                    Missing keywords (consider adding if true)
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {report.keywordsMissing.length ? (
+                      report.keywordsMissing.map((keyword) => (
+                        <span
+                          key={keyword}
+                          className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-700"
+                        >
+                          {keyword}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-neutral-400">None detected.</span>
+                    )}
                   </div>
                 </div>
               </div>
-            </motion.div>
-          )}
+            </div>
+
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-neutral-900">
+                What Changed
+              </h3>
+              <div className="mt-4 space-y-4 text-sm">
+                {report.changes.slice(0, 10).map((change, index) => (
+                  <div key={`${change.section}-${index}`} className="rounded-2xl border border-neutral-100 bg-neutral-50 p-4">
+                    <div className="text-xs font-semibold uppercase text-neutral-500">
+                      {change.section}
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-xs text-neutral-400">Before</p>
+                      <p className="text-neutral-700">{change.before}</p>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-xs text-neutral-400">After</p>
+                      <p className="text-neutral-700">{change.after}</p>
+                    </div>
+                    <p className="mt-2 text-xs text-neutral-500">
+                      {change.reason}
+                    </p>
+                  </div>
+                ))}
+                {report.changes.length === 0 && (
+                  <p className="text-neutral-400">No change report available.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+              <Button
+                variant="outline"
+                onClick={() => setStep("resume")}
+                className={lightButtonClasses.outline}
+              >
+                Start another resume
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <BackgroundRippleLayout
+      tone="light"
+      className="bg-white"
+      contentClassName="resume-optimizer pt-16"
+    >
+      <Navbar tone="light" />
+      <div className="px-4 pb-20 pt-24">
+        <div className="mx-auto max-w-6xl space-y-10">
+          <div className="grid gap-4 md:grid-cols-3">
+            {steps.map((item, index) => {
+              const isActive = item.id === step;
+              const isCompleted = steps.findIndex((stepItem) => stepItem.id === step) > index;
+              return (
+                <div
+                  key={item.id}
+                  className={`rounded-2xl border p-4 text-sm ${isActive
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : isCompleted
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                      : "border-neutral-200 bg-white text-neutral-500"
+                    }`}
+                >
+                  <div className="text-xs font-semibold uppercase">
+                    Step {index + 1}
+                  </div>
+                  <div className="mt-2 font-semibold">{item.label}</div>
+                  <div className="mt-1 text-xs opacity-80">{item.description}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {renderStepContent()}
         </div>
       </div>
     </BackgroundRippleLayout>

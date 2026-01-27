@@ -543,10 +543,14 @@ function createTextPagePreservationPrompt(resumeText, targetRole, originalPageCo
 
 CRITICAL CONTENT PRESERVATION RULES:
 1. YOU MUST PRESERVE ALL ORIGINAL TITLES, COMPANY NAMES, DATES, AND LOCATIONS EXACTLY AS THEY APPEAR.
-2. YOU MUST PRESERVE ALL CORE BULLET POINTS AND ACHIEVEMENTS. You may slightly rephrase them to include relevant keywords, but the substance must remain.
-3. DO NOT HARDCODE ANY DATA. Every piece of information in the output must come from the original resume.
-4. If a section exists in the original (e.g., Projects, Certifications), it MUST be included in the output.
-5. If a field is missing in the resume, return an empty string or empty array. Do not add placeholder text.
+2. NEVER MERGE bullet points, description sentences, or achievements into the "title" or "company" fields.
+3. EACH FIELD MUST CONTAIN ONLY ITS CORRESPONDING ENTITY (e.g., Title: "Software Engineer", NOT "Software Engineer | Built App").
+4. PRESERVE ALL CORE BULLET POINTS AND ACHIEVEMENTS in the "description" array. You may slightly rephrase them for ATS.
+5. DO NOT put job titles, dates, or companies into the "description" array as bullet points.
+6. DO NOT HARDCODE ANY DATA. Every piece of information in the output must come from the original resume.
+7. If a section exists in the original (e.g., Projects, Certifications), it MUST be included in the output.
+8. If a field is missing in the resume, return an empty string or empty array. Do not add placeholder text.
+9. "Expertise and Skills" must be treated as a SKILLS section, not as part of the last job experience.
 
 Resume (${originalPageCount} pages):
 ${truncatedResume}

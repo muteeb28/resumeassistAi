@@ -28,30 +28,44 @@ const PricingCard = ({
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       className={cn(
-        "relative p-7 md:p-8 rounded-3xl border border-slate-800/70 bg-slate-900/60 backdrop-blur-sm shadow-[0_24px_60px_rgba(2,6,23,0.45)]",
-        isPopular && "border-cyan-400/60 bg-gradient-to-b from-slate-900/80 via-slate-900/60 to-slate-900/40 shadow-[0_32px_90px_rgba(14,165,233,0.18)]",
+        "relative rounded-3xl border border-neutral-200 bg-white p-7 shadow-[0_16px_40px_rgba(15,23,42,0.08)] md:p-8",
+        isPopular &&
+          "border-cyan-300 bg-gradient-to-b from-white via-cyan-50/60 to-white shadow-[0_24px_60px_rgba(14,165,233,0.16)]",
         className
       )}
     >
       {isPopular && (
         <div className="absolute top-5 right-5">
-          <span className="bg-cyan-500/15 text-cyan-200 px-3 py-1 rounded-full text-xs font-semibold tracking-wide uppercase border border-cyan-400/30">
+          <span className="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700">
             Most Popular
           </span>
         </div>
       )}
 
       <div className="text-center">
-        <h3 className="text-xl md:text-2xl font-semibold text-white mb-2">{title}</h3>
+        <h3 className="mb-2 text-xl font-semibold text-neutral-900 md:text-2xl">
+          {title}
+        </h3>
         <div className="mb-3 flex items-end justify-center gap-2">
-          <span className="text-4xl md:text-5xl font-semibold text-white">{price}</span>
-          {period && <span className="text-slate-400 text-sm md:text-base">/{period}</span>}
+          <span className="text-4xl font-semibold text-neutral-900 md:text-5xl">
+            {price}
+          </span>
+          {period && (
+            <span className="text-sm text-neutral-500 md:text-base">/{period}</span>
+          )}
         </div>
-        <p className="text-slate-400 text-sm md:text-base mb-6">{description}</p>
+        <p className="mb-6 text-sm text-neutral-500 md:text-base">
+          {description}
+        </p>
 
         <Button
           variant={isPopular ? "default" : "outline"}
-          className="w-full mb-6"
+          className={cn(
+            "mb-6 w-full focus-visible:ring-neutral-900 focus-visible:ring-offset-white",
+            isPopular
+              ? "border border-neutral-900 bg-neutral-900 text-white shadow-none hover:bg-neutral-800"
+              : "border border-neutral-300 bg-white text-neutral-900 shadow-none hover:bg-neutral-900 hover:text-white"
+          )}
           size="lg"
         >
           {buttonText}
@@ -60,10 +74,10 @@ const PricingCard = ({
         <div className="space-y-3 text-left">
           {features.map((feature, index) => (
             <div key={index} className="flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full bg-cyan-500/15 flex items-center justify-center border border-cyan-500/30">
-                <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+              <div className="flex h-5 w-5 items-center justify-center rounded-full border border-cyan-200 bg-cyan-50">
+                <div className="h-2 w-2 rounded-full bg-cyan-500"></div>
               </div>
-              <span className="text-slate-300 text-sm">{feature}</span>
+              <span className="text-sm text-neutral-600">{feature}</span>
             </div>
           ))}
         </div>
@@ -74,11 +88,11 @@ const PricingCard = ({
 
 export const PaymentSection = () => {
   return (
-    <section className="relative py-24 px-4">
+    <section className="relative bg-white py-24 px-4 text-neutral-900">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(14,165,233,0.22),_transparent_65%)]" />
-        <div className="absolute left-1/2 top-10 h-24 w-[28rem] -translate-x-1/2 bg-cyan-500/30 blur-[90px]" />
-        <div className="absolute left-1/2 top-0 h-px w-56 -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(14,165,233,0.12),_transparent_70%)]" />
+        <div className="absolute left-1/2 top-10 h-24 w-[28rem] -translate-x-1/2 bg-cyan-300/30 blur-[90px]" />
+        <div className="absolute left-1/2 top-0 h-px w-56 -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-200 to-transparent" />
       </div>
 
       <div className="relative max-w-6xl mx-auto">
@@ -90,7 +104,7 @@ export const PaymentSection = () => {
             duration: 0.6,
             ease: "easeInOut",
           }}
-          className="bg-gradient-to-br from-slate-100 via-slate-200 to-slate-400 bg-clip-text text-center text-3xl md:text-5xl font-semibold tracking-tight text-transparent mb-4"
+          className="mb-4 text-center text-3xl font-semibold tracking-tight text-neutral-900 md:text-5xl"
         >
           Choose Your Plan
         </motion.h1>
@@ -103,7 +117,7 @@ export const PaymentSection = () => {
             duration: 0.6,
             ease: "easeInOut",
           }}
-          className="text-slate-400 text-base md:text-lg text-center mb-12 max-w-2xl mx-auto"
+          className="mx-auto mb-12 max-w-2xl text-center text-base text-neutral-500 md:text-lg"
         >
           Simple pricing for resume optimization and job tracking. Pay once for a resume or go monthly for tracking and outreach.
         </motion.p>
@@ -112,10 +126,11 @@ export const PaymentSection = () => {
           <PricingCard
             title="Resume Optimization"
             price="Rs 50"
-            description="One-time payment for a tailored, ATS-ready resume."
+            description="One-time payment per resume optimization."
             features={[
-              "Tailored resume builder",
-              "Job description match",
+              "1 resume optimization (ATS-ready) with 2 professional resume templates",
+              "Job description matching",
+              "Built-in job tracker",
               "ATS-friendly formatting",
               "PDF + DOCX downloads",
               "One-time payment"
@@ -124,19 +139,20 @@ export const PaymentSection = () => {
           />
 
           <PricingCard
-            title="Job Tracker + HR Emails"
-            price="Rs 135"
-            period="month"
-            description="Track applications and run cold email outreach."
+            title="Resume Optimization + HR Outreach"
+            price="Rs 199"
+            description="Unlock full access with a one-time payment per resume optimization."
             features={[
-              "Cloud job tracker",
-              "Google Sheets export",
-              "HR cold email templates",
-              "Follow-up reminders",
-              "Application status dashboard"
+              "Resume optimization (ATS-ready)",
+              "Job tracker dashboard",
+              "50 Dubai HR email contacts",
+              "1800+ India HR email contacts",
+              "LinkedIn profiles of HRs",
+              "Cold email templates (ready to send)",
+              "Application tracking & follow-ups"
             ]}
             isPopular={true}
-            buttonText="Start Monthly Plan"
+            buttonText="Unlock Full Access"
           />
         </div>
 
@@ -146,14 +162,14 @@ export const PaymentSection = () => {
           transition={{ delay: 0.6, duration: 0.5 }}
           className="mt-10 text-center"
         >
-          <p className="text-slate-500 text-sm mb-4">
-            Secure payment | Cancel anytime | 24/7 support
+          <p className="mb-4 text-sm text-neutral-500">
+            Secure payment | 24/7 support | Pricing is per resume optimization
           </p>
-          <div className="flex items-center justify-center gap-8 opacity-60">
-            <div className="text-slate-500 text-xs font-semibold">Stripe</div>
-            <div className="text-slate-500 text-xs font-semibold">PayPal</div>
-            <div className="text-slate-500 text-xs font-semibold">Apple Pay</div>
-            <div className="text-slate-500 text-xs font-semibold">Google Pay</div>
+          <div className="flex items-center justify-center gap-8 text-xs font-semibold text-neutral-400">
+            <div>Stripe</div>
+            <div>PayPal</div>
+            <div>Apple Pay</div>
+            <div>Google Pay</div>
           </div>
         </motion.div>
       </div>

@@ -5,6 +5,14 @@ import { createRequire } from 'module';
 // Use createRequire to import CommonJS module in ESM
 const require = createRequire(import.meta.url);
 const pdfParse = require('pdf-parse');
+let pdfjsLib = null;
+const loadPDFLib = async () => {
+  if (!pdfjsLib) {
+    pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    console.log(' [Enhanced] PDF.js library loaded');
+  }
+  return pdfjsLib;
+};
 
 /**
  * Enhanced file processor that preserves original page count and structure
@@ -107,58 +115,148 @@ function isTextFile(buffer) {
  */
 async function extractTextFromPDFWithStructure(buffer) {
   try {
-    console.log(' [Enhanced] Starting PDF parsing (Simplified Mode)...');
+    console.log(' [Enhanced] Starting PDF parsing (positional mode)...');
 
-    // Custom renderer to preserve spacing between words
-    function render_page(pageData) {
-      // Check for available text content methods
-      let render_options = {
-        normalizeWhitespace: true,
-        disableCombineTextItems: false
-      };
+    const pdfjsLib = await loadPDFLib();
+    const pdf = await pdfjsLib.getDocument({
+      data: new Uint8Array(buffer),
+      useSystemFonts: true,
+      disableFontFace: true,
+      disableWorker: true,
+      verbosity: 0
+    }).promise;
 
-      return pageData.getTextContent(render_options)
-        .then(function (textContent) {
-          let lastY, text = '';
-          for (let item of textContent.items) {
-            // Insert a space if it's on the same line, or a newline if it's a new line
-            // This fixes "Anengineerandaselftaught" issues by blindly adding spaces between chunks
-            // The AI will clean up extra spaces, but can't easily split concatenated words
-            if (lastY == item.transform[5] || !lastY) {
-              text += ' ' + item.str;
-            }
-            else {
-              text += '\n' + item.str;
-            }
-            lastY = item.transform[5];
-          }
-          return text;
+    const pageCount = pdf.numPages || 1;
+    const pages = [];
+    const pageMeta = [];
+
+    const buildLines = (items) => {
+      const lines = new Map();
+      items.forEach((item) => {
+        if (!item.str || !item.str.trim()) return;
+        const x = item.transform[4];
+        const y = item.transform[5];
+        // Use fine granularity (1 pixel) to avoid merging separate lines that are close together
+        const key = Math.round(y);
+        if (!lines.has(key)) {
+          lines.set(key, []);
+        }
+        lines.get(key).push({
+          text: item.str,
+          x,
+          width: item.width || 0
         });
-    }
+      });
 
-    const options = {
-      pagerender: render_page
+      return Array.from(lines.entries()).map(([y, lineItems]) => {
+        lineItems.sort((a, b) => a.x - b.x);
+        let lineText = '';
+        let lastX = null;
+        let lastWidth = 0;
+
+        lineItems.forEach((entry) => {
+          if (lastX !== null) {
+            const gap = entry.x - (lastX + lastWidth);
+            // ALWAYS add space between text items unless they're literally overlapping
+            // Previous logic with gap > 2px was too aggressive and glued words together
+            // PDF text items often don't include trailing spaces, so we need to add them
+            const needsSpace = gap >= 0 && !lineText.endsWith(' ') && !entry.text.startsWith(' ');
+            if (needsSpace) {
+              lineText += ' ';
+            }
+          }
+          lineText += entry.text;
+          lastX = entry.x;
+          lastWidth = entry.width;
+        });
+
+        return {
+          y,
+          minX: lineItems[0]?.x || 0,
+          text: lineText.replace(/\s+/g, ' ').trim()
+        };
+      }).filter((line) => line.text);
     };
 
-    // Use pdf-parse which is stable in Node.js environment
-    const data = await pdfParse(buffer, options);
+    const detectColumnSplit = (lines, pageWidth) => {
+      if (!lines || lines.length < 12) return null;
+      const starts = lines.map((line) => line.minX).sort((a, b) => a - b);
+      let maxGap = 0;
+      let splitIndex = -1;
+      for (let i = 0; i < starts.length - 1; i++) {
+        const gap = starts[i + 1] - starts[i];
+        if (gap > maxGap) {
+          maxGap = gap;
+          splitIndex = i;
+        }
+      }
+      const gapThreshold = Math.max(60, pageWidth * 0.12);
+      if (splitIndex === -1 || maxGap < gapThreshold) return null;
+      const splitX = (starts[splitIndex] + starts[splitIndex + 1]) / 2;
+      const leftCount = lines.filter((line) => line.minX < splitX).length;
+      const rightCount = lines.filter((line) => line.minX >= splitX).length;
+      if (leftCount < 4 || rightCount < 4) return null;
+      const total = lines.length;
+      const leftRatio = leftCount / total;
+      const rightRatio = rightCount / total;
+      if (leftRatio < 0.3 || rightRatio < 0.3) return null;
 
-    // pdf-parse returns:
-    // data.numpages (number of pages)
-    // data.info (PDF metadata)
-    // data.text (extracted text)
+      const rightLines = lines.filter((line) => line.minX >= splitX);
+      const shortRight = rightLines.filter((line) => (line.text || '').length <= 18).length;
+      const rightShortRatio = rightLines.length ? shortRight / rightLines.length : 0;
+      const datePattern = /((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)?\s*\d{4}|present|current|\d{2}\/\d{4})/i;
+      const dateRight = rightLines.filter((line) => datePattern.test(line.text || '')).length;
+      const rightDateRatio = rightLines.length ? dateRight / rightLines.length : 0;
+      if (rightShortRatio > 0.7 || rightDateRatio > 0.6) return null;
+      return { splitX, leftCount, rightCount };
+    };
 
-    const fullText = data.text || '';
-    const pageCount = data.numpages || 1;
+    for (let pageIndex = 1; pageIndex <= pageCount; pageIndex++) {
+      const page = await pdf.getPage(pageIndex);
+      const viewport = page.getViewport({ scale: 1.0 });
+      const textContent = await page.getTextContent({
+        normalizeWhitespace: true,
+        disableCombineTextItems: false
+      });
+
+      const lines = buildLines(textContent.items);
+      const split = detectColumnSplit(lines, viewport.width);
+      let ordered = [];
+      if (split) {
+        const leftLines = lines
+          .filter((line) => line.minX < split.splitX)
+          .sort((a, b) => b.y - a.y);
+        const rightLines = lines
+          .filter((line) => line.minX >= split.splitX)
+          .sort((a, b) => b.y - a.y);
+        ordered = [...leftLines, ...rightLines];
+        console.log(` [Enhanced] Page ${pageIndex}: columns detected (left ${split.leftCount}, right ${split.rightCount})`);
+        pageMeta.push({
+          page: pageIndex,
+          columns: 2,
+          splitX: split.splitX,
+          leftCount: split.leftCount,
+          rightCount: split.rightCount
+        });
+      } else {
+        ordered = lines.sort((a, b) => b.y - a.y);
+        pageMeta.push({ page: pageIndex, columns: 1 });
+      }
+
+      const pageText = ordered.map((line) => line.text).join('\n').trim();
+      if (pageText) {
+        pages.push(pageText);
+      }
+    }
+
+    const fullText = pages.join('\n\n--- PAGE BREAK ---\n\n');
 
     console.log(` [Enhanced] Extraction complete:`);
     console.log(`   - Original pages: ${pageCount}`);
     console.log(`   - Total characters: ${fullText.length}`);
 
-    // Clean the extracted text using our aggressive cleaner
-    // We add a specific 'raw_spaced' format hint so cleaner knows to handle extra spaces
     const cleanedText = cleanExtractedTextWithStructure(fullText, {
-      format: 'pdf_simple_spaced',
+      format: 'pdf_positional',
       originalPageCount: pageCount
     });
 
@@ -166,14 +264,34 @@ async function extractTextFromPDFWithStructure(buffer) {
       text: cleanedText,
       pageCount: pageCount,
       structure: {
-        format: 'pdf_simple_spaced',
+        format: 'pdf_positional',
         originalPageCount: pageCount,
-        preserveOriginalLayout: true
+        preserveOriginalLayout: true,
+        columnsDetected: pageMeta
       }
     };
   } catch (error) {
     console.error('PDF parsing error:', error);
-    throw new Error(`Failed to parse PDF: ${error.message}`);
+    console.warn(' [Enhanced] Falling back to simple PDF parsing');
+
+    const fallbackData = await pdfParse(buffer);
+    const fallbackText = fallbackData.text || '';
+    const fallbackPages = fallbackData.numpages || 1;
+
+    const cleanedText = cleanExtractedTextWithStructure(fallbackText, {
+      format: 'pdf_simple_fallback',
+      originalPageCount: fallbackPages
+    });
+
+    return {
+      text: cleanedText,
+      pageCount: fallbackPages,
+      structure: {
+        format: 'pdf_simple_fallback',
+        originalPageCount: fallbackPages,
+        preserveOriginalLayout: true
+      }
+    };
   }
 }
 

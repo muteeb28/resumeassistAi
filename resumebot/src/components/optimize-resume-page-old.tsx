@@ -496,9 +496,7 @@ export const OptimizeResumePage = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<{ id: string, price: number } | null>(null);
 
   // Initialize the optimization service (in production, get API key from environment)
-  const optimizationService = new DeepSeekOptimizationService(
-    import.meta.env.VITE_DEEPSEEK_API_KEY || 'demo-key'
-  );
+  const optimizationService = new DeepSeekOptimizationService();
 
   const handleFileUpload = (files: File[]) => {
     if (files.length > 0) {

@@ -9,12 +9,14 @@ export const PinContainer = ({
   title,
   href,
   className,
+  cardClassName,
   containerClassName,
 }: {
   children: React.ReactNode;
   title?: string;
   href?: string;
   className?: string;
+  cardClassName?: string;
   containerClassName?: string;
 }) => {
   const [transform, setTransform] = useState(
@@ -63,7 +65,10 @@ export const PinContainer = ({
           style={{
             transform: transform,
           }}
-          className="absolute left-1/2 p-4 top-1/2  flex justify-start items-start  rounded-2xl  shadow-[0_8px_16px_rgb(0_0_0/0.4)] bg-black border border-white/[0.1] group-hover/pin:border-white/[0.2] transition duration-700 overflow-hidden"
+          className={cn(
+            "absolute left-1/2 top-1/2 flex items-start justify-start rounded-2xl border border-white/[0.1] bg-black p-4 shadow-[0_8px_16px_rgb(0_0_0/0.4)] transition duration-700 overflow-hidden group-hover/pin:border-white/[0.2]",
+            cardClassName
+          )}
         >
           <div className={cn(" relative z-50 ", className)}>{children}</div>
         </div>

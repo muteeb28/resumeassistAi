@@ -708,9 +708,7 @@ export const CreateResumePage = () => {
   const [generatedResume, setGeneratedResume] = useState<ResumeData | null>(null);
   
   // Initialize the AI service
-  const resumeGenerator = new ResumeGeneratorService(
-    import.meta.env.VITE_DEEPSEEK_API_KEY || 'demo-key'
-  );
+  const resumeGenerator = new ResumeGeneratorService();
 
   const handleTemplateSelect = (template: Template) => {
     setSelectedTemplate(template);

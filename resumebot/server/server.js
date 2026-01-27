@@ -12,7 +12,7 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import fs from 'fs';
-import {connectDB} from "./db/db.js";
+import { connectDB } from "./db/db.js";
 import cookieParser from 'cookie-parser';
 
 connectDB();
@@ -22,9 +22,14 @@ import { optimizeResumeWithPagePreservation } from './services/enhancedResumeOpt
 import { extractTextFromFileWithStructure, extractTextFromFile, cleanExtractedText } from './services/enhancedFileProcessor.js';
 import { parseResumeWithStructure } from './services/enhancedResumeParser.js';
 import { parseResumeToStructuredJSON } from './services/advancedResumeParser.js';
+import { parseResumeUniversal } from './services/universalResumeParser.js';
+import { parseResumeDeadSimple } from './services/deadSimpleParser.js';
 import { generatePDF, generatePDFFromURL } from './services/pdfGenerator.js';
 import { initiatePayment } from './services/initiatePayment.js';
 import { polishResumeText } from './services/kimiResumePolisher.js';
+import { generateResume } from './services/resumeGenerator.js';
+import { buildResumeJsonFromParsed, generateJobSpecificResume } from './services/jobResumeGenerator.js';
+import { generateResumeDocxBuffer } from './services/docxGenerator.js';
 // Import NEW ATS Optimizer
 import { optimizeResumeForATS } from './services/atsResumeOptimizer.js';
 
@@ -104,6 +109,7 @@ app.get('/', (req, res) => {
     version: '2.0.0',
     endpoints: {
       health: 'GET /api/health',
+      generateResume: 'POST /api/generate-resume',
       optimizeResume: 'POST /api/optimize-resume',
       optimizeResumeStream: 'POST /api/optimize-resume-stream',
       atsOptimize: 'POST /api/ats-optimize',
@@ -141,24 +147,23 @@ app.post('/api/extract-resume', upload.single('resume'), async (req, res) => {
     }
 
     const extractionResult = await extractTextFromFileWithStructure(file.path, file.mimetype);
+
+    console.log('\n========== RESUME UPLOAD DEBUG ==========');
+    console.log('Extracted text length:', extractionResult.text.length);
+    console.log('First 500 chars of extracted text:', extractionResult.text.substring(0, 500));
+
+    // Use DEAD SIMPLE parser - no BS, just works
     let parsed = null;
-    let advancedParsed = null;
-    let enhancedParsed = null;
 
     try {
-      advancedParsed = parseResumeToStructuredJSON(extractionResult.text);
+      parsed = parseResumeDeadSimple(extractionResult.text);
+      console.log('✓ DEAD SIMPLE PARSER DONE');
+      console.log('  Jobs:', parsed?.experience?.length || 0);
+      console.log('  Skills:', parsed?.skills?.length || 0);
     } catch (parseError) {
-      console.warn('Advanced parser failed:', parseError.message);
+      console.error('Parser failed:', parseError);
+      throw new Error('Failed to parse resume');
     }
-
-    try {
-      enhancedParsed = parseResumeWithStructure(extractionResult.text, extractionResult.structure);
-    } catch (parseError) {
-      console.warn('Enhanced parser failed:', parseError.message);
-    }
-
-      const selection = pickRicherParsedPayload(advancedParsed, enhancedParsed);
-      parsed = mergeParsedPayloads(selection.payload || advancedParsed || enhancedParsed, advancedParsed, enhancedParsed);
 
     if (!parsed) {
       throw new Error('Unable to parse resume content');
@@ -180,6 +185,9 @@ app.post('/api/extract-resume', upload.single('resume'), async (req, res) => {
     } catch (cleanupError) {
       console.warn('Warning: Could not delete uploaded file:', cleanupError.message);
     }
+
+    const resumeJson = buildResumeJsonFromParsed(parsed);
+    parsed.resumeJson = resumeJson;
 
     res.json({
       success: true,
@@ -332,8 +340,11 @@ const parsePastedResumeText = (text, structure) => {
     sections[currentSection].push(trimmed);
   });
 
+  const headerContent = sections.header.join('\n');
   const fullText = normalizedText;
-  const emailMatch = fullText.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+
+  // Extract contact info - look specifically in header/contact patterns first, then fallback
+  const emailMatch = fullText.match(/([a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})/);
   const email = emailMatch ? emailMatch[1] : null;
 
   const phoneCandidates = fullText.match(/\+?\d[\d\s().-]{7,}\d/g) || [];
@@ -343,25 +354,42 @@ const parsePastedResumeText = (text, structure) => {
   }) || null;
 
   const extractLabeledValue = (label) => {
-    const regex = new RegExp(`${label}\\s*[:\\-]\\s*([^\\n|]+)`, 'i');
+    const regex = new RegExp(`${label}\\s*[:\\-]\\s*([^\\n|\\s]+)`, 'i');
     const match = fullText.match(regex);
-    return match ? match[1].trim() : null;
+    return match ? match[1].trim().replace(/[.,|]+$/, '') : null;
   };
 
-  const linkedInMatch = fullText.match(/(linkedin\.com\/in\/[^\s|]+)/i);
-  const linkedin = linkedInMatch ? linkedInMatch[1] : extractLabeledValue('linkedin');
+  // Improved social/website matching: prioritize header lines, exclude trailing punctuation
+  const cleanLink = (link) => link ? link.replace(/[,.|]+$/, '').trim() : null;
 
-  const githubMatch = fullText.match(/(github\.com\/[^\s|]+)/i);
-  const github = githubMatch ? githubMatch[1] : extractLabeledValue('github');
+  const linkedInMatch = headerContent.match(/(linkedin\.com\/in\/[^\s|]+)/i) || fullText.match(/(linkedin\.com\/in\/[^\s|]+)/i);
+  const linkedin = cleanLink(linkedInMatch ? linkedInMatch[1] : extractLabeledValue('linkedin'));
 
-  const websiteMatch = fullText.match(/https?:\/\/[^\s|]+/i);
-  const website = websiteMatch && !websiteMatch[0].includes('linkedin') && !websiteMatch[0].includes('github')
+  const githubMatch = headerContent.match(/(github\.com\/[^\s|]+)/i) || fullText.match(/(github\.com\/[^\s|]+)/i);
+  const github = cleanLink(githubMatch ? githubMatch[1] : extractLabeledValue('github'));
+
+  // CRITICAL: Website should ONLY be taken from header to avoid grabbing random project URLs
+  const websiteMatch = headerContent.match(/https?:\/\/[^\s|]+/i);
+  const website = cleanLink(websiteMatch && !websiteMatch[0].toLowerCase().includes('linkedin') && !githubMatch?.[0]?.includes(websiteMatch[0])
     ? websiteMatch[0]
-    : extractLabeledValue('portfolio') || extractLabeledValue('website');
+    : extractLabeledValue('portfolio') || extractLabeledValue('website'));
 
-  const headerLines = sections.header.filter((line) => line && !line.includes('@') && !/linkedin|github|portfolio|website/i.test(line));
-  const nameCandidate = headerLines.find((line) => !/\d/.test(line) && line.length <= 60) || '';
-  const name = nameCandidate.replace(/[*_`#]+/g, '').trim();
+  const headerLines = sections.header.filter((line) => {
+    const tr = line.trim();
+    return tr && !tr.includes('@') && !/linkedin\.com|github\.com|http|www\./i.test(tr);
+  });
+
+  const nameCandidate = headerLines.find((line) => {
+    const tr = line.trim();
+    return !/\d/.test(tr) && tr.length >= 2 && tr.length <= 60 && /^[A-Za-z]/.test(tr);
+  }) || (headerLines[0] ? headerLines[0].trim() : '');
+
+  let name = nameCandidate.replace(/[*_`#]+/g, '').trim();
+
+  // Final safety check: if name starts lowercase but has a space (e.g. atika Khan), capitalize first letter
+  if (name && /^[a-z]/.test(name)) {
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+  }
 
   const locationLine = sections.header.find((line) => /location/i.test(line)) ||
     sections.header.find((line) => line.includes(',') && !line.includes('@') && !/linkedin|github|portfolio|website/i.test(line));
@@ -789,6 +817,11 @@ const parsePastedResumeText = (text, structure) => {
       .filter(Boolean);
   };
 
+  const experienceEntries = parseExperienceBlocks(sections.experience);
+  const experienceRawText = experienceEntries.length === 0
+    ? sections.experience.join('\n').trim()
+    : '';
+
   return {
     name,
     contact: {
@@ -801,7 +834,8 @@ const parsePastedResumeText = (text, structure) => {
     },
     summary: summary || '',
     skills: dedupe(skills),
-    experience: parseExperienceBlocks(sections.experience),
+    experience: experienceEntries,
+    experienceRawText: experienceRawText || undefined,
     education: parseEducationBlocks(sections.education),
     projects: parseProjectLines(sections.projects),
     certifications: parseCertifications(sections.certifications),
@@ -893,6 +927,10 @@ app.post('/api/parse-resume-text', async (req, res) => {
       parsed.formatInfo.originalPageCount = normalizedPageCount;
     }
 
+    // Standardize structure for the frontend "handleApplyEdits" logic
+    const resumeJson = buildResumeJsonFromParsed(parsed);
+    parsed.resumeJson = resumeJson;
+
     res.json({
       success: true,
       data: parsed
@@ -929,6 +967,81 @@ app.post('/api/polish-resume-text', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to polish resume text'
+    });
+  }
+});
+
+// Resume generation endpoint (AI - server side)
+app.post('/api/generate-resume', async (req, res) => {
+  try {
+    const { jobDescription, templateId, userData } = req.body || {};
+
+    if (!jobDescription || typeof jobDescription !== 'string' || !jobDescription.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Job description is required'
+      });
+    }
+
+    if (!templateId || typeof templateId !== 'string' || !templateId.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Template ID is required'
+      });
+    }
+
+    const result = await generateResume({
+      jobDescription,
+      templateId,
+      userData
+    });
+
+    res.json({
+      success: true,
+      data: result.resume,
+      meta: result.meta
+    });
+  } catch (error) {
+    console.error('Resume generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate resume'
+    });
+  }
+});
+
+// Job-specific resume generation endpoint (resume text + JD)
+app.post('/api/generate-job-resume', async (req, res) => {
+  try {
+    const { resumeText, jobDescription, roleTitle, companyName } = req.body || {};
+
+    if (!resumeText || typeof resumeText !== 'string' || !resumeText.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Resume text is required'
+      });
+    }
+
+    const result = await generateJobSpecificResume({
+      resumeText,
+      jobDescription: typeof jobDescription === 'string' ? jobDescription : '',
+      roleTitle,
+      companyName
+    });
+
+    res.json({
+      success: true,
+      data: {
+        resume: result.resume,
+        report: result.report,
+        meta: result.meta
+      }
+    });
+  } catch (error) {
+    console.error('Job resume generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate job-specific resume'
     });
   }
 });
@@ -1369,7 +1482,7 @@ app.post('/api/optimize-resume', upload.single('resume'), async (req, res) => {
 // NEW ATS Optimization Endpoint with Streaming
 app.post('/api/ats-optimize', upload.single('resume'), async (req, res) => {
   console.log('🎯 [ATS] Received optimization request');
-  
+
   // Set up Server-Sent Events
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -1443,7 +1556,7 @@ app.post('/api/ats-optimize', upload.single('resume'), async (req, res) => {
   } catch (error) {
     console.error('🎯 [ATS] ERROR:', error.message);
     sendProgress('error', error.message || 'ATS optimization failed');
-    
+
     // Clean up on error
     if (req.file) {
       try {
@@ -1452,7 +1565,7 @@ app.post('/api/ats-optimize', upload.single('resume'), async (req, res) => {
         console.warn('⚠️ Could not delete uploaded file:', cleanupError.message);
       }
     }
-    
+
     res.end();
   }
 });
@@ -1494,6 +1607,40 @@ app.post('/api/generate-pdf', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to generate PDF'
+    });
+  }
+});
+
+app.post('/api/generate-docx', async (req, res) => {
+  try {
+    const { resume, template } = req.body || {};
+
+    if (!resume || typeof resume !== 'object') {
+      return res.status(400).json({
+        success: false,
+        error: 'Resume payload is required'
+      });
+    }
+
+    const templateKey = template === 'split' ? 'split' : 'classic';
+    const buffer = await generateResumeDocxBuffer(resume, templateKey);
+    const rawName = resume?.basics?.name || 'resume';
+    const safeName = rawName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=${safeName || 'resume'}.docx`
+    );
+    res.send(buffer);
+  } catch (error) {
+    console.error(' DOCX generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to generate DOCX'
     });
   }
 });
@@ -1680,16 +1827,54 @@ function getEntryKey(entry) {
 }
 
 function mergeUniqueArray(baseItems, otherItems) {
-  const merged = [];
-  const seen = new Set();
-  const add = (item) => {
-    const key = getEntryKey(item);
-    if (key && seen.has(key)) return;
-    if (key) seen.add(key);
-    merged.push(item);
+  const merged = Array.isArray(baseItems) ? [...baseItems] : [];
+  const incoming = Array.isArray(otherItems) ? otherItems : [];
+
+  const getCleanKey = (item) => {
+    const raw = getEntryKey(item);
+    return raw.replace(/[^a-z0-9]/g, '');
   };
-  (Array.isArray(baseItems) ? baseItems : []).forEach(add);
-  (Array.isArray(otherItems) ? otherItems : []).forEach(add);
+
+  const getRichnessTotal = (item) => {
+    if (!item || typeof item !== 'object') return 0;
+    const bullets = item.bullets || item.description || item.details || [];
+    const bulletCount = Array.isArray(bullets) ? bullets.length : (typeof bullets === 'string' ? bullets.split('\n').length : 0);
+    const textLength = JSON.stringify(item).length;
+    return (bulletCount * 50) + textLength;
+  };
+
+  incoming.forEach((newItem) => {
+    const newKey = getCleanKey(newItem);
+    if (!newKey) return;
+
+    let duplicateIndex = -1;
+    const isDuplicate = merged.some((existingItem, index) => {
+      const existingKey = getCleanKey(existingItem);
+      if (!existingKey) return false;
+
+      if (newKey === existingKey) {
+        duplicateIndex = index;
+        return true;
+      }
+
+      if (newKey.length > 5 && existingKey.length > 5) {
+        if (newKey.includes(existingKey) || existingKey.includes(newKey)) {
+          duplicateIndex = index;
+          return true;
+        }
+      }
+      return false;
+    });
+
+    if (isDuplicate && duplicateIndex > -1) {
+      if (getRichnessTotal(newItem) > getRichnessTotal(merged[duplicateIndex]) + 10) {
+        merged[duplicateIndex] = newItem;
+      }
+    } else if (!isDuplicate) {
+      merged.push(newItem);
+    }
+  });
+
   return merged;
 }
 
@@ -1778,16 +1963,20 @@ function mergeParsedPayloads(primaryPayload, ...candidates) {
       }
     }
 
-    if (!primaryData.name && candidateData.name) {
+    const hasBaseName = primaryData.name && primaryData.name !== 'Unknown';
+    const hasCandidateName = candidateData.name && candidateData.name !== 'Unknown';
+
+    if (!hasBaseName && hasCandidateName) {
       primaryData.name = candidateData.name;
     }
 
     const summaryKeys = ['summary', 'professionalSummary', 'executiveSummary', 'profile', 'objective', 'about'];
     const baseSummary = summaryKeys.map((key) => primaryData[key]).find((value) => typeof value === 'string' && value.trim());
     const otherSummary = summaryKeys.map((key) => candidateData[key]).find((value) => typeof value === 'string' && value.trim());
+
     if (!baseSummary && otherSummary) {
       primaryData.summary = otherSummary;
-    } else if (baseSummary && otherSummary && baseSummary.length < 80 && otherSummary.length > baseSummary.length) {
+    } else if (baseSummary && otherSummary && otherSummary.length > baseSummary.length + 20) {
       primaryData.summary = otherSummary;
     }
 
@@ -1808,6 +1997,10 @@ function mergeParsedPayloads(primaryPayload, ...candidates) {
       'personalProjects'
     ]);
     mergeSectionArray(primaryData, candidateData, 'certifications', ['certificates', 'licenses', 'credentials']);
+
+    if (!primaryData.experienceRawText && candidateData.experienceRawText) {
+      primaryData.experienceRawText = candidateData.experienceRawText;
+    }
 
     if (!resolvedPrimary.formatInfo && candidate.formatInfo) {
       resolvedPrimary.formatInfo = { ...candidate.formatInfo };
@@ -1860,15 +2053,15 @@ function getParsedPayloadStats(payload) {
 
 function getParsedPayloadScore(payload) {
   const stats = getParsedPayloadStats(payload);
-  const summaryScore = Math.min(Math.floor(stats.summaryLength / 80), 4);
-  const skillScore = Math.min(stats.skillsCount, 12);
-  const bulletScore = Math.min(stats.bulletCount, 12);
-  return (stats.experienceCount * 6)
+  const summaryScore = Math.min(Math.floor(stats.summaryLength / 60), 6);
+  const skillScore = Math.min(stats.skillsCount, 15);
+  const bulletScore = Math.min(stats.bulletCount, 15);
+  return (stats.experienceCount * 10)
     + bulletScore
-    + (stats.educationCount * 3)
-    + (stats.projectsCount * 3)
+    + (stats.educationCount * 5)
+    + (stats.projectsCount * 4)
     + (stats.certificationsCount * 2)
-    + Math.floor(skillScore / 2)
+    + Math.floor(skillScore / 1.5)
     + summaryScore;
 }
 
@@ -1893,19 +2086,19 @@ function isParsedPayloadSparse(payload, pageCount = 1) {
   const hasCoreSection = totalSections > 0;
   const isMultiPage = Number(pageCount) > 1;
 
-  if (!hasCoreSection && stats.skillsCount < 4 && stats.summaryLength < 150) {
+  if (!hasCoreSection && stats.skillsCount < 3 && stats.summaryLength < 100) {
     return { isSparse: true, stats };
   }
 
-  if (stats.bulletCount >= 3 && stats.experienceCount >= 1) {
+  if (stats.bulletCount >= 2 && stats.experienceCount >= 1) {
     return { isSparse: false, stats };
   }
 
   const isSparse = isMultiPage
     ? stats.experienceCount === 0
-      || (stats.experienceCount < 2 && stats.bulletCount < 4 && stats.educationCount === 0 && stats.projectsCount === 0)
-      || (totalSignals < 4 && stats.summaryLength < 120)
-    : (totalSignals < 3 && stats.summaryLength < 80);
+    || (stats.experienceCount < 2 && stats.bulletCount < 3 && stats.educationCount === 0 && stats.projectsCount === 0)
+    || (totalSignals < 3 && stats.summaryLength < 100)
+    : (totalSignals < 2 && stats.summaryLength < 60);
 
   return { isSparse, stats };
 }

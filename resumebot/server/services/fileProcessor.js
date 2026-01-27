@@ -97,14 +97,12 @@ async function extractTextFromPDF(buffer) {
     // Import pdfjs-dist for Node.js environment
     const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
     
-    // Disable worker for Node.js environment
-    pdfjsLib.GlobalWorkerOptions.workerSrc = null;
-    
     // Configure for Node.js environment (no canvas required)
     const pdf = await pdfjsLib.getDocument({
       data: buffer,
       useSystemFonts: true,
       disableFontFace: true,
+      disableWorker: true,
       verbosity: 0 // Suppress warnings
     }).promise;
     
@@ -138,14 +136,19 @@ async function extractTextFromPDF(buffer) {
         const lineItems = lines.get(y);
         // Sort items in line by X coordinate (left to right)
         lineItems.sort((a, b) => a.x - b.x);
-        
-        // Join text items in the line with appropriate spacing
-        const lineText = lineItems
-          .map(item => item.text)
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-        
+
+        // Build line text with proper spacing between items
+        let lineText = '';
+        lineItems.forEach((item, index) => {
+          if (index > 0 && !lineText.endsWith(' ') && !item.text.startsWith(' ')) {
+            lineText += ' ';
+          }
+          lineText += item.text;
+        });
+
+        // Clean up multiple spaces
+        lineText = lineText.replace(/\s+/g, ' ').trim();
+
         if (lineText) {
           fullText += lineText + '\n';
         }

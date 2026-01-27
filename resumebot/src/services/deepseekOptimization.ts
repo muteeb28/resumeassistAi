@@ -13,8 +13,8 @@ export class DeepSeekOptimizationService {
   private apiKey: string;
   private baseUrl = 'https://api.openai.com/v1';
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || '';
   }
 
   async optimizeResume(

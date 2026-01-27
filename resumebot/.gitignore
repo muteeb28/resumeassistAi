@@ -28,3 +28,5 @@ server/cache
 *.njsproj
 *.sln
 *.sw?
+
+/src/generated/prisma

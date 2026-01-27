@@ -187,6 +187,7 @@ async function extractPDFWithTokenLimit(buffer, abortController = null) {
     data: uint8Array,
     useSystemFonts: true,
     disableFontFace: true,
+    disableWorker: true,
     verbosity: 0
   }).promise;
   
