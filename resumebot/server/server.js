@@ -36,6 +36,8 @@ import { optimizeResumeForATS } from './services/atsResumeOptimizer.js';
 // controllers
 import { authProfile, createUser, login } from "./controller/user.controller.js";
 import { createOrder, verifyPayment } from "./controller/payment.controller.js";
+import { addDatafForHrIndiaLists, getHrIndianListDemo } from './controller/common.controller.js';
+import { deleteJobApplication, editJobApplication, getJobApplications, setJobApplication, updateJobApplicationStatus } from './controller/job.controller.js';
 
 const app = express();
 const PORT = process.env.PORT || 3007;
@@ -133,6 +135,15 @@ app.post("/api/user/login", login);
 app.get("/api/user/profile", authProfile);
 app.get("/api/payment/charge", createOrder);
 app.post("/api/payment/verify", verifyPayment);
+app.get("/api/hr/list/demo", getHrIndianListDemo);
+app.get('/api/job/applications', getJobApplications);
+app.post("/api/job/applications", setJobApplication);
+app.post("/api/job/application/edit", editJobApplication);
+app.post('/api/job/application/update/status', updateJobApplicationStatus);
+app.post("/api/job/application/delete", deleteJobApplication);
+
+// common controller paths
+app.post('/api/import/hr-indian-lists', addDatafForHrIndiaLists);
 
 // Resume extraction endpoint (non-AI, for front-end preview/compact payloads)
 app.post('/api/extract-resume', upload.single('resume'), async (req, res) => {

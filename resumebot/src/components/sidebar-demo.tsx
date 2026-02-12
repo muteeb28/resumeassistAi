@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
   IconLayoutDashboard,
@@ -9,6 +9,7 @@ import {
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 import HrEmailsTable from "./hr-emails-table";
+import toast from "react-hot-toast";
 
 export default function SidebarDemo() {
   const links = [
@@ -42,6 +43,37 @@ export default function SidebarDemo() {
     },
   ];
   const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<any[]>([
+    {
+      id: "1",
+      company: "Alpha Company",
+      title: "Data Analyst",
+      status: "Offer",
+      link: "example.com/jobpos",
+      contact: "Jane",
+      date: "3/21/2025",
+      stage: "Third Round",
+      custom: {},
+    },
+  ]);
+
+    useEffect(() => {
+    const getJobApplications = async () => {
+      try  {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/job/applications`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data.applications) && data.applications.length > 0) {
+            setRows(data.applications);
+          }
+        }
+      } catch (error) {
+        console.log('some error occured while fetching job applications', error);
+      }
+    }
+
+    getJobApplications();
+  }, []);
   return (
     <div
       className={cn(
@@ -74,7 +106,7 @@ export default function SidebarDemo() {
           </div>
         </SidebarBody>
       </Sidebar>
-      <Dashboard />
+      <Dashboard rows={rows} setRows={setRows}/>
     </div>
   );
 }
@@ -106,23 +138,12 @@ export const LogoIcon = () => {
   );
 };
 
-const Dashboard = () => {
+const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => void }) => {
   const [view, setView] = useState<"tracker" | "emails">("tracker");
 
   type ApplicationStatus = "Offer" | "Rejected" | "Interview" | "Applied";
   type EditableField = "company" | "title" | "link" | "contact" | "date" | "stage";
   type CustomColumn = { id: string; label: string };
-  type JobRow = {
-    id: string;
-    company: string;
-    title: string;
-    status: ApplicationStatus;
-    link: string;
-    contact: string;
-    date: string;
-    stage: string;
-    custom: Record<string, string>;
-  };
 
   const createId = (prefix: string) =>
     `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -135,52 +156,8 @@ const Dashboard = () => {
   };
 
   const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
-  const [rows, setRows] = useState<JobRow[]>(() => [
-    {
-      id: createId("row"),
-      company: "Alpha Company",
-      title: "Data Analyst",
-      status: "Offer",
-      link: "example.com/jobpos",
-      contact: "Jane",
-      date: "3/21/2025",
-      stage: "Third Round",
-      custom: {},
-    },
-    {
-      id: createId("row"),
-      company: "Beta Company",
-      title: "Healthcare Data Analyst",
-      status: "Rejected",
-      link: "example.com/jobpos",
-      contact: "Jack",
-      date: "3/21/2025",
-      stage: "First Round",
-      custom: {},
-    },
-    {
-      id: createId("row"),
-      company: "Gamma Company",
-      title: "Data Science Analyst",
-      status: "Interview",
-      link: "example.com/jobpos",
-      contact: "Anna",
-      date: "4/1/2025",
-      stage: "First Round",
-      custom: {},
-    },
-    {
-      id: createId("row"),
-      company: "Delta Company",
-      title: "Data Analyst",
-      status: "Applied",
-      link: "example.com/jobpos",
-      contact: "Maya",
-      date: "4/1/2025",
-      stage: "Recruiter Screen",
-      custom: {},
-    },
-  ]);
+  const [newlyAddedRows, setNewlyAddedRows] = useState<any[]>([]);
+  const [saveLoader, setSaveLoader] = useState(false);
 
   const addRow = () => {
     const custom = customColumns.reduce<Record<string, string>>((acc, column) => {
@@ -188,10 +165,26 @@ const Dashboard = () => {
       return acc;
     }, {});
 
-    setRows((prev) => [
+    const newRowId = createId("row");
+    setRows((prev: any) => [
       ...prev,
       {
-        id: createId("row"),
+        id: newRowId,
+        company: "",
+        title: "",
+        status: "Applied",
+        link: "",
+        contact: "",
+        date: "",
+        stage: "",
+        custom,
+      },
+    ]);
+
+    setNewlyAddedRows((prev) => [
+      ...prev,
+      {
+        id: newRowId,
         company: "",
         title: "",
         status: "Applied",
@@ -204,18 +197,57 @@ const Dashboard = () => {
     ]);
   };
 
+  const saveRow = async () => {
+    // Saving row to the db
+    if (newlyAddedRows.length === 0) {
+      toast.error("No new applications to save. Please add a new application before saving.");
+      return;
+    }
+    try {
+      console.log('saving applications: ', newlyAddedRows);
+      setSaveLoader(true);
+      const result = await fetch(`${import.meta.env.VITE_API_URL}/job/applications`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ applications: newlyAddedRows }),
+      });
+      const data = await result.json();
+      if (result.ok) {
+        setNewlyAddedRows([]);
+        toast.success("Applications saved successfully!");
+      } else {
+        toast.error(data.message || "Failed to save applications.");
+      }
+    } catch (error) {
+      console.error("Error saving application:", error);
+      toast.error("Failed to save applications.");
+    } finally {
+      setSaveLoader(false);
+    }
+  }
+
   const deleteRow = (rowId: string) => {
     setRows((prev) => prev.filter((row) => row.id !== rowId));
+    setNewlyAddedRows((prev) => prev.filter((row) => row.id !== rowId));
+    console.log('deleted: ', rowId);
   };
 
   const updateRowField = (rowId: string, field: EditableField, value: string) => {
     setRows((prev) =>
       prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
     );
+      setNewlyAddedRows((prev) =>
+        prev.map((row) => (row.id === rowId ? { ...row, [field]: value } : row))
+      );
   };
 
   const updateRowStatus = (rowId: string, status: ApplicationStatus) => {
     setRows((prev) =>
+      prev.map((row) => (row.id === rowId ? { ...row, status } : row))
+    );
+    setNewlyAddedRows((prev) =>
       prev.map((row) => (row.id === rowId ? { ...row, status } : row))
     );
   };
@@ -225,6 +257,12 @@ const Dashboard = () => {
       prev.map((row) =>
         row.id === rowId
           ? { ...row, custom: { ...row.custom, [columnId]: value } }
+          : row
+      )
+    );
+    setNewlyAddedRows((prev) =>
+      prev.map((row) =>
+        row.id === rowId ? { ...row, custom: { ...row.custom, [columnId]: value } }
           : row
       )
     );
@@ -263,6 +301,17 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 p-1">
+                <div className="px-2 py-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = "/login";
+                    }}
+                    className="rounded-full border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:border-slate-400 cursor-pointer"
+                  >
+                    Unlock 1,800 HR profiles
+                  </button>
+                </div>
               <button
                 type="button"
                 onClick={() => setView("tracker")}
@@ -302,6 +351,14 @@ const Dashboard = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={saveRow}
+                    disabled={saveLoader || newlyAddedRows.length === 0}
+                    className="cursor-pointer inline-flex h-8 items-center rounded-md border border-blue-200 bg-blue-600 px-2.5 text-[11px] font-semibold text-white transition hover:border-blue-700 disabled:bg-blue-100 disable:opacity-50"
+                  >
+                    Save Rows
+                  </button>
                   <button
                     type="button"
                     onClick={addRow}

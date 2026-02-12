@@ -3,6 +3,7 @@ const { getPool } = db;
 import { redis } from "../db/redis.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import prisma from '../lib/prisma.js'
 
 const generateTokens = (userId) => {
     const accessToken = jwt.sign({ userId }, process.env.ACCESS_TOKEN_SECRET || "default_secret", {
@@ -24,11 +25,10 @@ const setCookies = (res, accessToken) => {
 export const createUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
-
-        const { rows: [existingUser] } = await getPool().query(
-            'SELECT id FROM users WHERE email = $1',
-            [email]
-        );
+        const existingUser = await prisma.users.findUnique({
+            where: { email },
+            select: { id: true }
+        });
 
         if (existingUser) {
             return res.status(400).json({ message: "User with this email already exists" });
@@ -37,10 +37,16 @@ export const createUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        const { rows: [newUser] } = await getPool().query(
-            'INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING id',
-            [username, email, hashedPassword]
-        );
+            const newUser = await prisma.users.create({
+                data: {
+                    username,
+                    email,
+                    password: hashedPassword,
+                },
+                select: {
+                    id: true,
+                },
+            });
 
         res.status(201).json({
             success: true,
@@ -58,10 +64,12 @@ export const login = async (req, res) => {
         const { email, password } = req.body;
         console.log("Login attempt:", email);
 
-        const { rows: [user] } = await getPool().query(
-            'SELECT id, username, email, password, "createdAt" FROM users WHERE email = $1',
-            [email]
-        );
+        const user = await prisma.users.findUnique({
+            where: { email },
+            select: { id: true, username: true, email: true, password: true, createdAt: true }
+        })
+
+        console.log("this is a prisma user: ", user);
 
         if (user && (await bcrypt.compare(password, user.password))) {
             const { accessToken } = generateTokens(user.id);
