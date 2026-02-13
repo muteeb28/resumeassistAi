@@ -60,7 +60,7 @@ export default function SidebarDemo() {
     useEffect(() => {
     const getJobApplications = async () => {
       try  {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/job/applications`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/job/applications`);
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data.applications) && data.applications.length > 0) {
@@ -158,6 +158,7 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
   const [customColumns, setCustomColumns] = useState<CustomColumn[]>([]);
   const [newlyAddedRows, setNewlyAddedRows] = useState<any[]>([]);
   const [saveLoader, setSaveLoader] = useState(false);
+  const [saveEditLoader, setSaveEditLoader] = useState(false);
 
   const addRow = () => {
     const custom = customColumns.reduce<Record<string, string>>((acc, column) => {
@@ -228,10 +229,35 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
     }
   }
 
-  const deleteRow = (rowId: string) => {
-    setRows((prev) => prev.filter((row) => row.id !== rowId));
-    setNewlyAddedRows((prev) => prev.filter((row) => row.id !== rowId));
-    console.log('deleted: ', rowId);
+  const deleteRow = async (rowId: string) => {
+    try {
+      const isNewlyAddedRow = newlyAddedRows.some((row) => row.id === rowId);
+      if (isNewlyAddedRow) {
+        setRows((prev) => prev.filter((row) => row.id !== rowId));
+        setNewlyAddedRows((prev) => prev.filter((row) => row.id !== rowId));
+        toast.success("application deleted successfully");
+        return;
+      }
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/job/application/delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({id: rowId})
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.message || "failed to delete application");
+        return;
+      }
+      setRows((prev) => prev.filter((row) => row.id !== rowId));
+      setNewlyAddedRows((prev) => prev.filter((row) => row.id !== rowId));
+      toast.success("application deleted successfully");
+    }
+    catch (error: any) {
+      toast.error("failed to delete application. Try again later", error);
+      return;
+    }
   };
 
   const updateRowField = (rowId: string, field: EditableField, value: string) => {
@@ -243,13 +269,37 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
       );
   };
 
-  const updateRowStatus = (rowId: string, status: ApplicationStatus) => {
-    setRows((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, status } : row))
-    );
-    setNewlyAddedRows((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, status } : row))
-    );
+  const updateRowStatus = async (rowId: string, status: ApplicationStatus) => {
+    try {
+      const isNewlyAddedRow = newlyAddedRows.some((row) => row.id === rowId);
+      if (isNewlyAddedRow) {
+        toast.error("Please save the application before updating its status.");
+        return;
+      }
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/job/application/status/update/${rowId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.message || "failed to update application");
+        return;
+      }
+      setRows((prev) =>
+        prev.map((row) => (row.id === rowId ? { ...row, status } : row))
+      );
+      setNewlyAddedRows((prev) =>
+        prev.map((row) => (row.id === rowId ? { ...row, status } : row))
+      );
+      toast.success("application status updated successfully.");
+    }
+    catch (error: any) {
+      toast.error('failed to update application. Try again later', error);
+    }
   };
 
   const updateCustomField = (rowId: string, columnId: string, value: string) => {
@@ -285,6 +335,63 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
         column.id === columnId ? { ...column, label: value } : column
       )
     );
+  };
+
+  // Edit modal state
+  const [editingRow, setEditingRow] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState<any | null>(null);
+
+  const openEditModal = (row: any) => {
+    setEditingRow(row);
+    setEditForm({ ...row, custom: { ...(row.custom || {}) } });
+  };
+
+  const closeEditModal = () => {
+    setEditingRow(null);
+    setEditForm(null);
+  };
+
+  const handleEditChange = (field: EditableField, value: string) => {
+    if (!editForm) return;
+    setEditForm({ ...editForm, [field]: value });
+  };
+
+  const handleEditStatusChange = (value: ApplicationStatus) => {
+    if (!editForm) return;
+    setEditForm({ ...editForm, status: value });
+  };
+
+  const handleEditCustomChange = (columnId: string, value: string) => {
+    if (!editForm) return;
+    setEditForm({ ...editForm, custom: { ...editForm.custom, [columnId]: value } });
+  };
+
+  const saveEditedRow = async () => {
+    if (!editForm) return;
+    try {
+      setSaveEditLoader(true);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/job/applications/${editForm.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ application: editForm }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        toast.error(result.message || "failed to update application");
+        return;
+      }
+      toast.success("application updated successfully");
+      setRows((prev) => prev.map((r) => (r.id === editForm.id ? editForm : r)));
+      setNewlyAddedRows((prev) => prev.map((r) => (r.id === editForm.id ? editForm : r)));
+      closeEditModal();
+    }
+    catch (error: any) {
+      toast.error('failed to update application. Try again later', error);
+    } finally {
+      setSaveEditLoader(false);
+    }
   };
 
   return (
@@ -388,15 +495,7 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
                       <th className="px-3 py-2 font-semibold">Application Date</th>
                       <th className="px-3 py-2 font-semibold">Interview Stage</th>
                       {customColumns.map((column) => (
-                        <th key={column.id} className="px-3 py-2 font-semibold">
-                          <input
-                            value={column.label}
-                            onChange={(event) =>
-                              updateColumnLabel(column.id, event.target.value)
-                            }
-                            className="w-full bg-transparent text-[11px] font-semibold text-white placeholder:text-white/70 focus:outline-none"
-                          />
-                        </th>
+                        <th key={column.id} className="px-3 py-2 font-semibold">{column.label}</th>
                       ))}
                       <th className="px-3 py-2 font-semibold">Actions</th>
                     </tr>
@@ -408,24 +507,10 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
                         className="border-b border-neutral-200 last:border-b-0"
                       >
                         <td className="px-3 py-2 text-neutral-900">
-                          <input
-                            value={row.company}
-                            onChange={(event) =>
-                              updateRowField(row.id, "company", event.target.value)
-                            }
-                            className="w-full bg-transparent text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
-                            placeholder="Company"
-                          />
+                          <div className="text-xs font-medium text-neutral-900">{row.company || '-'}</div>
                         </td>
                         <td className="px-3 py-2 text-neutral-900">
-                          <input
-                            value={row.title}
-                            onChange={(event) =>
-                              updateRowField(row.id, "title", event.target.value)
-                            }
-                            className="w-full bg-transparent text-xs text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
-                            placeholder="Title"
-                          />
+                          <div className="text-xs text-neutral-900">{row.title || '-'}</div>
                         </td>
                         <td className="px-3 py-2">
                           <select
@@ -434,8 +519,7 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
                               updateRowStatus(row.id, event.target.value as ApplicationStatus)
                             }
                             className={cn(
-                              "rounded-full px-2 py-1 text-[11px] font-semibold focus:outline-none",
-                              statusClasses[row.status]
+                              "rounded-full px-2 py-1 text-[11px] font-semibold focus:outline-none text-black border-2 cursor-pointer",
                             )}
                           >
                             <option value="Offer">Offer</option>
@@ -445,62 +529,38 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
                           </select>
                         </td>
                         <td className="px-3 py-2 text-neutral-600">
-                          <input
-                            value={row.link}
-                            onChange={(event) =>
-                              updateRowField(row.id, "link", event.target.value)
-                            }
-                            className="w-full bg-transparent text-xs text-neutral-600 placeholder:text-neutral-400 focus:outline-none"
-                            placeholder="example.com/jobpos"
-                          />
+                          {row.link ? (
+                            <a className="text-xs text-blue-600 hover:underline" href={row.link.startsWith('http') ? row.link : `https://${row.link}`} target="_blank" rel="noreferrer">{row.link}</a>
+                          ) : (
+                            <div className="text-xs text-neutral-400">-</div>
+                          )}
                         </td>
                         <td className="px-3 py-2 text-neutral-700">
-                          <input
-                            value={row.contact}
-                            onChange={(event) =>
-                              updateRowField(row.id, "contact", event.target.value)
-                            }
-                            className="w-full bg-transparent text-xs text-neutral-700 placeholder:text-neutral-400 focus:outline-none"
-                            placeholder="Contact"
-                          />
+                          <div className="text-xs text-neutral-700">{row.contact || '-'}</div>
                         </td>
                         <td className="px-3 py-2 text-neutral-700">
-                          <input
-                            value={row.date}
-                            onChange={(event) =>
-                              updateRowField(row.id, "date", event.target.value)
-                            }
-                            className="w-full bg-transparent text-xs text-neutral-700 placeholder:text-neutral-400 focus:outline-none"
-                            placeholder="MM/DD/YYYY"
-                          />
+                          <div className="text-xs text-neutral-700">{row.date || '-'}</div>
                         </td>
                         <td className="px-3 py-2 text-neutral-700">
-                          <input
-                            value={row.stage}
-                            onChange={(event) =>
-                              updateRowField(row.id, "stage", event.target.value)
-                            }
-                            className="w-full bg-transparent text-xs text-neutral-700 placeholder:text-neutral-400 focus:outline-none"
-                            placeholder="Stage"
-                          />
+                          <div className="text-xs text-neutral-700">{row.stage || '-'}</div>
                         </td>
                         {customColumns.map((column) => (
                           <td key={column.id} className="px-3 py-2 text-neutral-700">
-                            <input
-                              value={row.custom[column.id] || ""}
-                              onChange={(event) =>
-                                updateCustomField(row.id, column.id, event.target.value)
-                              }
-                              className="w-full bg-transparent text-xs text-neutral-700 placeholder:text-neutral-400 focus:outline-none"
-                              placeholder="Value"
-                            />
+                            <div className="text-xs text-neutral-700">{(row.custom && row.custom[column.id]) || '-'}</div>
                           </td>
                         ))}
-                        <td className="px-3 py-2">
+                        <td className="px-3 py-2 flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(row)}
+                            className="text-[11px] font-semibold text-neutral-600 hover:text-neutral-900 cursor-pointer mt-2"
+                          >
+                            Edit
+                          </button>
                           <button
                             type="button"
                             onClick={() => deleteRow(row.id)}
-                            className="text-[11px] font-semibold text-neutral-500 transition hover:text-neutral-900"
+                            className="text-[11px] font-semibold text-red-500 transition hover:text-red-900 cursor-pointer mt-2"
                           >
                             Delete
                           </button>
@@ -510,6 +570,58 @@ const Dashboard = ({ rows, setRows }: { rows: any[], setRows: (newRows: any) => 
                   </tbody>
                 </table>
               </div>
+              {/* Edit Modal */}
+              {editingRow && editForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black/50" onClick={closeEditModal} />
+                  <div className="relative z-10 w-full max-w-2xl rounded-lg bg-white p-6">
+                    <h3 className="mb-4 text-lg font-semibold text-neutral-900">Edit Application</h3>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-700">Company</label>
+                        <input value={editForm.company || ''} onChange={(e) => handleEditChange('company', e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-700">Title</label>
+                        <input value={editForm.title || ''} onChange={(e) => handleEditChange('title', e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-700">Link</label>
+                        <input value={editForm.link || ''} onChange={(e) => handleEditChange('link', e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-700">Contact</label>
+                        <input value={editForm.contact || ''} onChange={(e) => handleEditChange('contact', e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-700">Date</label>
+                        <input value={editForm.date || ''} onChange={(e) => handleEditChange('date', e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-neutral-700">Stage</label>
+                        <input value={editForm.stage || ''} onChange={(e) => handleEditChange('stage', e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                      </div>
+                    </div>
+                    {customColumns.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="mb-2 text-sm font-medium text-neutral-800">Custom fields</h4>
+                        <div className="grid gap-3">
+                          {customColumns.map((col) => (
+                            <div key={col.id}>
+                              <label className="mb-1 block text-xs font-medium text-neutral-700">{col.label}</label>
+                              <input value={(editForm.custom && editForm.custom[col.id]) || ''} onChange={(e) => handleEditCustomChange(col.id, e.target.value)} className="w-full rounded border border-neutral-200 p-2 text-sm text-black" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-6 flex justify-end gap-3">
+                      <button onClick={closeEditModal} className="rounded-md border border-neutral-200 px-4 py-2 text-sm text-neutral-700 cursor-pointer hover:bg-neutral-800 hover:text-white">Cancel</button>
+                      <button onClick={saveEditedRow} disabled={saveEditLoader} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white cursor-pointer hover:bg-blue-700">Save</button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="mt-4">

@@ -138,8 +138,8 @@ app.post("/api/payment/verify", verifyPayment);
 app.get("/api/hr/list/demo", getHrIndianListDemo);
 app.get('/api/job/applications', getJobApplications);
 app.post("/api/job/applications", setJobApplication);
-app.post("/api/job/application/edit", editJobApplication);
-app.post('/api/job/application/update/status', updateJobApplicationStatus);
+app.put("/api/job/applications/:jobId", editJobApplication);
+app.put('/api/job/application/status/update/:jobId', updateJobApplicationStatus);
 app.post("/api/job/application/delete", deleteJobApplication);
 
 // common controller paths

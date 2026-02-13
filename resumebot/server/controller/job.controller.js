@@ -49,7 +49,7 @@ export const setJobApplication = async (req, res) => {
 
 export const editJobApplication = async (req, res) => {
     try {
-        if (!req.body?.application || !req.body?.id) {
+        if (!req.body?.application || !req.params?.jobId) {
             return res.status(400).json({
                 success: false,
                 message: "application data and id are required in the request body",
@@ -58,7 +58,7 @@ export const editJobApplication = async (req, res) => {
 
         const result = await prisma.jobApplications.update({
             where: {
-                id: req.body.id
+                id: req.params.jobId
             },
             data: req.body.application,
             select: {id: true}
@@ -84,7 +84,7 @@ export const editJobApplication = async (req, res) => {
 
 export const updateJobApplicationStatus = async (req, res) => {
     try {
-        if (!req.body?.id || !req.body?.status) {
+        if (!req.body?.status || !req.params?.jobId) {
             return res.status(400).json({
                 success: false,
                 message: "application data and id are required in the request body",
@@ -93,7 +93,7 @@ export const updateJobApplicationStatus = async (req, res) => {
 
         const result = await prisma.jobApplications.update({
             where: {
-                id: req.body.id
+                id: req.params.jobId
             },
             data: {
                 status: req.body.status
